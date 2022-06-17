@@ -1329,24 +1329,25 @@ def choose_report1(message):
     type_ask = bot.send_message(message.chat.id,
     "اختر نوع التقرير الذي تريده", reply_markup=reportsKB)
     bot.register_next_step_handler(type_ask, choose_report2)
-
+#------------------
 def choose_report2(message):
     if message.text == "تقرير عن الدفعات":
         payments_report1(message)
     elif message.text == "تقرير عن الطلبات":
-        pass
+        orders_report1(message)
     elif message.text == "تقرير عن عميل":
-        pass
+        client_report1(message)
     elif message.text == "تقرير شامل":
         pass
     elif message.text == "/AdminCP":
         pass
-
+#------------------
+#------------------
 def payments_report1(message):
     period_ask = bot.send_message(message.chat.id,
     "من فضلك حدد مدة التقرير", reply_markup=periodsKB)
     bot.register_next_step_handler(period_ask, payments_report2)
-
+#------------------
 def payments_report2(message):
     con = psycopg2.connect(
 
@@ -1357,24 +1358,176 @@ def payments_report2(message):
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    period = message.text
-    select_script = """SELECT * from received_payments
-    where receive_dt >  CURRENT_DATE - INTERVAL %s"""
-    if period == "آخر 24 ساعة":
-        select_value = ("'24 hour'",)
-    elif period == "آخر أسبوع":
-        select_value = ("'7 day'",)
-    elif period == "آخر شهر":
-        select_value = ("'1 month'",)
+    if message.text != "/AdminCP":
+        period = message.text
+        select_script = """SELECT * from received_payments
+        where receive_dt >  CURRENT_DATE - INTERVAL %s"""
+    
+        if period == "آخر 24 ساعة":
+            select_value = ("'24 hour'",)
+        elif period == "آخر أسبوع":
+            select_value = ("'7 day'",)
+        elif period == "آخر شهر":
+            select_value = ("'1 month'",)
+        cur.execute(select_script, select_value)
+        payments_count = cur.rowcount
+        report_text = ""
+        for record in cur.fetchall():
+            username = record["source"]
+            type = record["type"]
+            code = record["code"]
+            status = record["status"]
+            receive_dt = record["receive_dt"]
+            report_text += ("اسم المستخدم: " + username +
+            "\n نوع الدفعة: " + type + 
+            "\n كود الدفعة: " + code + 
+            "\n الحالة: " + status + 
+            "\n تاريخ الاستلام: " + str(receive_dt) + 
+            "\n-----\n")
+        bot.send_message(message.chat.id,
+        "عدد الدفعات: " + str(payments_count) + 
+        "\n------------\n معلومات الدفعات: \n" + report_text)
+        admin_cp1(message)
     elif message.text == "/AdminCP":
         admin_cp1(message)
-    cur.execute(select_script, select_value)
-    print(cur.rowcount)
-    admin_cp1(message)
 
     con.commit()
     cur.close()
     con.close()
+#------------------
+#------------------
+def orders_report1(message):
+    period_ask = bot.send_message(message.chat.id,
+    "من فضلك حدد مدة التقرير", reply_markup=periodsKB)
+    bot.register_next_step_handler(period_ask, orders_report2)
+#------------------
+def orders_report2(message):
+    con = psycopg2.connect(
+
+            host = "localhost",
+            database = "db1",
+            user = "postgres",
+            password = "admin",
+            port = 5432
+        )
+    cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
+    if message.text != "/AdminCP":
+        period = message.text
+        select_script = """SELECT * from product_orders
+        where order_dt >  CURRENT_DATE - INTERVAL %s"""
+    
+        if period == "آخر 24 ساعة":
+            select_value = ("'24 hour'",)
+        elif period == "آخر أسبوع":
+            select_value = ("'7 day'",)
+        elif period == "آخر شهر":
+            select_value = ("'1 month'",)
+        cur.execute(select_script, select_value)
+        orders_count = cur.rowcount
+        report_text = ""
+        for record in cur.fetchall():
+            username = record["client_username"]
+            product = record["product_name"]
+            qnt = record["quantity"]
+            delivered = record["delivered"]
+            order_dt = record["order_dt"]
+            report_text += ("\n اسم المستخدم: " + username +
+            "\n اسم المنتج: " + product + 
+            "\n الكمية: " + str(qnt) + 
+            "\n تم التسليم: " + str(delivered) + 
+            "\n تاريخ الطلب: " + str(order_dt) + 
+            "\n-----")
+        bot.send_message(message.chat.id,
+        "عدد الطلبات: " + str(orders_count) + 
+        "\n------------\n معلومات الطلبات: \n" + report_text)
+        admin_cp1(message)
+    elif message.text == "/AdminCP":
+        admin_cp1(message)
+
+    con.commit()
+    cur.close()
+    con.close()
+#------------------
+#------------------
+def client_report1(message):
+    client_ask = bot.send_message(message.chat.id,
+    "من فضلك أرسل اسم المستخدم الخاص بالعميل", reply_markup=send_message2KB)
+    bot.register_next_step_handler(client_ask, client_report2)
+
+def client_report2(message):
+    con = psycopg2.connect(
+
+            host = "localhost",
+            database = "db1",
+            user = "postgres",
+            password = "admin",
+            port = 5432
+        )
+    cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
+    if (message.text != "إلغاء") & (message.text != "/AdminCP"):
+        username = message.text
+        select_script = "SELECT * FROM clients WHERE username = %s"
+        select_value = (username, )
+        cur.execute(select_script, select_value)
+        if bool(cur.rowcount) == True:
+            # Client General Info
+            for record in cur.fetchall():
+                id = record["id"]
+                username = record["username"]
+                cur_balance = record["balance"]
+                join_dt = record["join_dt"]
+                frst_name = record["first_name"]
+            #-----------------------
+            # Product Orders Info - All Time Paid Balance & Orders Count
+            select_script = "SELECT * FROM product_orders WHERE client_username = %s"
+            select_value = (username, )
+            cur.execute(select_script, select_value)
+            all_paid = 0
+            orders_count = cur.rowcount
+            for record in cur.fetchall():
+                paid = record["qnt"]*record["price"]
+                
+                all_paid += paid
+            #----------
+            # Product Orders Info - getting product 1 info
+            select_script = "SELECT * FROM product_orders WHERE client_username = %s & product_name = &s"
+            select_value = (username, "Account+SSN")
+            cur.execute(select_script, select_value)
+            product1_count = cur.rowcount
+
+            #----------
+            # Product Orders Info - getting product 1 info
+            select_script = "SELECT * FROM product_orders WHERE client_username = %s & product_name = &s"
+            select_value = (username, "Account+SSN")
+            cur.execute(select_script, select_value)
+            product1_count = cur.rowcount
+            #-----------------------
+            # Payments Info
+            select_script = "SELECT * FROM received_payments WHERE source = %s"
+            select_value = (username, )
+            cur.execute(select_script, select_value)
+            for record in cur.fetchall():
+                id = record["id"]
+                username = record["username"]
+                cur_balance = record["balance"]
+                join_dt = record["join_dt"]
+                frst_name = record["first_name"]
+            #-----------------------
+            print(cur.fetchall())
+        elif bool(cur.rowcount) == False:
+            bot.send_message(message.chat.id,
+            "اسم المستخدم غير موجود، يرجى المحاولة مرة أخرى")
+            client_report1(message)
+
+    elif message.text == "إلغاء":
+        bot.send_message(message.chat.id, "تم إلغاء العملية")
+        send_message1(message)
+    elif message.text == "/AdminCP":
+        choose_report1(message)
+    con.commit()
+    cur.close()
+    con.close()
+
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
