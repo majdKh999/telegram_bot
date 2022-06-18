@@ -22,6 +22,10 @@ logger = logging.getLogger()
 BOT_TOKEN = "5147583630:AAFFpgqmZ05LOIAJln1p5vHjiudoRaUbzTQ"
 bot = telebot.TeleBot(BOT_TOKEN)
 
+def run():
+        logger.info("Start in DEV MODE")
+        bot.start_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", "8443")), url_path=BOT_TOKEN,
+        webhook_url="https://{}.herokuapp.com/{}".format(os.environ.get("APP_NAME"), BOT_TOKEN))
 if MODE == "dev":
     def run():
         logger.info("Start in DEV MODE")
