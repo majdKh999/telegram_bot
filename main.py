@@ -660,7 +660,7 @@ def verify_payment3(message, payment_id):
                     + "\n Payment_ID: " + payment_id
                     + "\n Type: " + type
                     + "\n Username: " + username
-                    + "\n Receive Date: " + receive_dt
+                    + "\n Receive Date: " + str(receive_dt)
                     + "\n Status: " + status
                     + "\n taken: " + str(taken)
                     + "\n------------------"
@@ -1485,35 +1485,67 @@ def client_report2(message):
             all_paid = 0
             orders_count = cur.rowcount
             for record in cur.fetchall():
-                paid = record["qnt"]*record["price"]
-                
+                paid = record["quantity"]*record["price"]
                 all_paid += paid
+                qnt = record["quantity"]
             #----------
             # Product Orders Info - getting product 1 info
-            select_script = "SELECT * FROM product_orders WHERE client_username = %s & product_name = &s"
+            select_script = "SELECT * FROM product_orders WHERE client_username = %s AND product_name = %s"
             select_value = (username, "Account+SSN")
             cur.execute(select_script, select_value)
-            product1_count = cur.rowcount
+            product1_count = 0
+            for record in cur.fetchall():
+                qnt = record["quantity"]
+                product1_count += qnt
 
             #----------
-            # Product Orders Info - getting product 1 info
-            select_script = "SELECT * FROM product_orders WHERE client_username = %s & product_name = &s"
-            select_value = (username, "Account+SSN")
+            # Product Orders Info - getting product 2 info
+            select_script = "SELECT * FROM product_orders WHERE client_username = %s AND product_name = %s"
+            select_value = (username, "Account")
             cur.execute(select_script, select_value)
-            product1_count = cur.rowcount
+            product2_count = 0
+            for record in cur.fetchall():
+                qnt = record["quantity"]
+                product2_count += qnt
+
+            #----------
+            # Product Orders Info - getting product 3 info
+            select_script = "SELECT * FROM product_orders WHERE client_username = %s AND product_name = %s"
+            select_value = (username, "SSN")
+            cur.execute(select_script, select_value)
+            product3_count = 0
+            for record in cur.fetchall():
+                qnt = record["quantity"]
+                product3_count += qnt
             #-----------------------
             # Payments Info
             select_script = "SELECT * FROM received_payments WHERE source = %s"
             select_value = (username, )
             cur.execute(select_script, select_value)
-            for record in cur.fetchall():
-                id = record["id"]
-                username = record["username"]
-                cur_balance = record["balance"]
-                join_dt = record["join_dt"]
-                frst_name = record["first_name"]
+            
             #-----------------------
-            print(cur.fetchall())
+            bot.send_message(message.chat.id,
+            "🆔 المعرف الخاص بالعميل: " + id + 
+            "\n 🧑🏽اسم العميل: " + frst_name + 
+            "\n 🧑🏽‍💻 اسم المستخدم: " + username + 
+            "\n 💰 الرصيد الحالي: " + str(cur_balance) + 
+            "\n 📅 تاريخ الانضمام: " + str(join_dt) + 
+            "\n------------------\n" + 
+            "---طلبات الشراء--- " +
+            "\n 1️⃣ المنتج (Account+SSN)، كمية المشتريات : " + str(product1_count) + 
+            "\n 2️⃣ المنتج (Account)، كمية المشتريات : " + str(product2_count) + 
+            "\n 3️⃣ المنتج (SSN)، كمية المشتريات : " + str(product3_count) + 
+            "\n 🤩 إجمالي الرصيد المدفوع في طلبات الشراء: " + str(all_paid) + " SP" +
+            "\n------------------\n" +
+            "---الدفعات المستقبلة---" + 
+            "\n (Visa_M)، قيمة المدفوعات:" + 
+            "\n طريقة الدفع (Visa_NonM)، قيمة المدفوعات:" + 
+            "\n طريقة الدفع (YobitCode)، قيمة المدفوعات:" + 
+            "\n طريقة الدفع (Haram)، قيمة المدفوعات:" + 
+            "\n طريقة الدفع (Payeer)، قيمة المدفوعات:" + 
+            "\n إجمالي المدفوعات المستقبلة:" 
+
+            )
         elif bool(cur.rowcount) == False:
             bot.send_message(message.chat.id,
             "اسم المستخدم غير موجود، يرجى المحاولة مرة أخرى")
