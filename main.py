@@ -1,5 +1,6 @@
 
 import os
+import sys
 import glob
 import time
 from tkinter import HIDDEN
@@ -11,12 +12,28 @@ import datetime
 from datetime import datetime
 import PIL
 from PIL import Image
-
-BOT_TOKEN = "5147583630:AAFFpgqmZ05LOIAJln1p5vHjiudoRaUbzTQ"
-bot = telebot.TeleBot(BOT_TOKEN)
+import logging 
 
 list = []
 admin_ids = [301284229]
+MODE = os.getenv('MODE')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger()
+BOT_TOKEN = "5147583630:AAFFpgqmZ05LOIAJln1p5vHjiudoRaUbzTQ"
+bot = telebot.TeleBot(BOT_TOKEN)
+
+if MODE == "dev":
+    def run():
+        logger.info("Start in DEV MODE")
+        bot.start_polling()
+elif MODE == "prod":
+    def run():
+        logger.info("Start in DEV MODE")
+        bot.start_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", "8443")), url_path=BOT_TOKEN,
+        webhook_url="https://{}.herokuapp.com/{}".format(os.environ.get("APP_NAME"), BOT_TOKEN))
+else:
+    logger.error("No mode specified")
+    sys.exit()
 
 
 returnToMainBTN = types.KeyboardButton("القائمة الرئيسية")
@@ -2259,4 +2276,4 @@ def rep_MainKB(message):
 
 
 print("Running ...")
-bot.infinity_polling()
+run()
