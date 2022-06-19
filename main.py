@@ -19,9 +19,6 @@ admin_ids = [301284229]
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
 
-def run():
-        logger.info("Start in DEV MODE")
-        bot.polling()
 
 MODE = config('MODE')
 if MODE == "dev":
