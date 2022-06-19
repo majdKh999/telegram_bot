@@ -3,26 +3,27 @@ import os
 import sys
 import glob
 import time
-from tkinter import HIDDEN
 import telebot
 from telebot import types
 import psycopg2
 import psycopg2.extras
 import datetime
 from datetime import datetime
-import PIL
-from PIL import Image
 import logging 
+from decouple import config
 
-BOT_TOKEN = os.getenv('BOT_TOKEN')
+BOT_TOKEN = config('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
 admin_ids = [301284229]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
 
+def run():
+        logger.info("Start in DEV MODE")
+        bot.polling()
 
-MODE = os.getenv('MODE')
+MODE = config('MODE')
 if MODE == "dev":
     def run():
         logger.info("Start in DEV MODE")
@@ -35,6 +36,7 @@ elif MODE == "prod":
 else:
     logger.error("No mode specified")
     sys.exit()
+
 list = []
 
 
