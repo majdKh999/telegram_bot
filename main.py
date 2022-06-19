@@ -14,30 +14,28 @@ import PIL
 from PIL import Image
 import logging 
 
-list = []
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+bot = telebot.TeleBot(BOT_TOKEN)
 admin_ids = [301284229]
-MODE = os.getenv('MODE')
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
-BOT_TOKEN = "5147583630:AAFFpgqmZ05LOIAJln1p5vHjiudoRaUbzTQ"
-bot = telebot.TeleBot(BOT_TOKEN)
 
-def run():
-        logger.info("Start in DEV MODE")
-        bot.start_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", "8443")), url_path=BOT_TOKEN,
-        webhook_url="https://{}.herokuapp.com/{}".format(os.environ.get("APP_NAME"), BOT_TOKEN))
+
+MODE = os.getenv('MODE')
 if MODE == "dev":
     def run():
         logger.info("Start in DEV MODE")
-        bot.start_polling()
+        bot.polling()
 elif MODE == "prod":
     def run():
-        logger.info("Start in DEV MODE")
-        bot.start_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", "8443")), url_path=BOT_TOKEN,
+        logger.info("Start in prod MODE")
+        bot.webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", "8443")), url_path=BOT_TOKEN,
         webhook_url="https://{}.herokuapp.com/{}".format(os.environ.get("APP_NAME"), BOT_TOKEN))
 else:
     logger.error("No mode specified")
     sys.exit()
+list = []
 
 
 returnToMainBTN = types.KeyboardButton("القائمة الرئيسية")
