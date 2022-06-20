@@ -28,7 +28,7 @@ if MODE == "dev":
 elif MODE == "prod":
     def run():
         logger.info("Start in prod MODE")
-        bot.webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", "8443")), url_path=BOT_TOKEN,
+        bot.set_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", "8443")), url_path=BOT_TOKEN,
         webhook_url="https://{}.herokuapp.com/{}".format(os.environ.get("APP_NAME"), BOT_TOKEN))
 else:
     logger.error("No mode specified")
@@ -254,6 +254,10 @@ def admin_cp2(message):
         choose_report1(message)
     elif message.text == "تأكيد الدفعات":
         verify_payment1(message)
+    elif message.text == "/start":
+        start(message)
+    elif message.text == "/AdminCP":
+        admin_cp1(message)
 #------------------------------------------------------------------
 #------------------------------------------------------------------
 #------------------------------------------------------------------
@@ -281,7 +285,7 @@ def update_price_list3(message):
     con = psycopg2.connect(  # Start Database Connection
 
                 host = "localhost",
-                database = "db1",
+                database = "bablyon_db",
                 user = "postgres",
                 password = "admin",
                 port = 5432
@@ -318,7 +322,7 @@ def update_price_list4(message, product):
     con = psycopg2.connect(  # Start Database Connection
 
                 host = "localhost",
-                database = "db1",
+                database = "bablyon_db",
                 user = "postgres",
                 password = "admin",
                 port = 5432
@@ -334,7 +338,7 @@ def update_price_list4(message, product):
         con = psycopg2.connect(  # Start Database Connection
 
                 host = "localhost",
-                database = "db1",
+                database = "bablyon_db",
                 user = "postgres",
                 password = "admin",
                 port = 5432
@@ -370,7 +374,7 @@ def add_balance_step2(message):
     con = psycopg2.connect(  # Start Database Connection
 
                 host = "localhost",
-                database = "db1",
+                database = "bablyon_db",
                 user = "postgres",
                 password = "admin",
                 port = 5432
@@ -404,7 +408,7 @@ def add_balance_step3(message, username_answer):
     con = psycopg2.connect(  # Start Database Connection
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -466,7 +470,7 @@ def reduce_balance_step2(message):
     con = psycopg2.connect(  # Start Database Connection
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -499,7 +503,7 @@ def reduce_balance_step3(message, username_answer):
     con = psycopg2.connect(  # Start Database Connection
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -564,7 +568,7 @@ def get_balance_step2(message):
     con = psycopg2.connect(  # Start Database Connection
 
         host = "localhost",
-        database = "db1",
+        database = "bablyon_db",
         user = "postgres",
         password = "admin",
         port = 5432
@@ -613,7 +617,7 @@ def verify_payment2(message):
     con = psycopg2.connect(  # Start Database Connection
 
         host = "localhost",
-        database = "db1",
+        database = "bablyon_db",
         user = "postgres",
         password = "admin",
         port = 5432
@@ -653,7 +657,7 @@ def verify_payment3(message, payment_id):
     con = psycopg2.connect(  # Start Database Connection
 
         host = "localhost",
-        database = "db1",
+        database = "bablyon_db",
         user = "postgres",
         password = "admin",
         port = 5432
@@ -702,7 +706,7 @@ def verify_payment4(message, payment_id, code_value):
     con = psycopg2.connect(  # Start Database Connection
 
         host = "localhost",
-        database = "db1",
+        database = "bablyon_db",
         user = "postgres",
         password = "admin",
         port = 5432
@@ -793,7 +797,7 @@ def send_product3(message):
     con = psycopg2.connect(  # Start Database Connection
 
         host = "localhost",
-        database = "db1",
+        database = "bablyon_db",
         user = "postgres",
         password = "admin",
         port = 5432
@@ -852,7 +856,7 @@ def send_product4(message, order_id):
     con = psycopg2.connect(  # Start Database Connection
 
         host = "localhost",
-        database = "db1",
+        database = "bablyon_db",
         user = "postgres",
         password = "admin",
         port = 5432
@@ -958,7 +962,7 @@ def send_product_new1(message):
 def send_product_new2(message):
     con = psycopg2.connect(  # Start Database Connection
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -991,7 +995,7 @@ def send_product_new2(message):
 def send_product_new3(message, username):
     con = psycopg2.connect(  # Start Database Connection
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -1091,7 +1095,7 @@ def send_product_new6(message, price, qnt, product, order_id, username):
     con = psycopg2.connect(  # Start Database Connection
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -1248,7 +1252,7 @@ def send_message3(message, type_ans):
     con = psycopg2.connect(
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -1307,7 +1311,7 @@ def send_message5(message, message_ans, username_ans, type_ans):
     con = psycopg2.connect(
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -1370,7 +1374,7 @@ def payments_report2(message):
     con = psycopg2.connect(
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -1423,7 +1427,7 @@ def orders_report2(message):
     con = psycopg2.connect(
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -1476,7 +1480,7 @@ def client_report2(message):
     con = psycopg2.connect(
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -1596,7 +1600,7 @@ def start(message):
         con = psycopg2.connect(
 
                 host = "localhost",
-                database = "db1",
+                database = "bablyon_db",
                 user = "postgres",
                 password = "admin",
                 port = 5432
@@ -1639,13 +1643,6 @@ def test(message):
     send_message1(message)
 
 
-
-
-
-
-
-
-
 #------------------------------------------------------------------
 #------------------------------------------------------------------
 #------------------------------------------------------------------
@@ -1677,7 +1674,7 @@ def rep_MainKB(message):
         con = psycopg2.connect(  # Start Database Connection
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -1764,7 +1761,7 @@ def rep_MainKB(message):
             con = psycopg2.connect(  # Start Database Connection
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -1858,7 +1855,7 @@ def rep_MainKB(message):
         con = psycopg2.connect(  # Start Database Connection
 
         host = "localhost",
-        database = "db1",
+        database = "bablyon_db",
         user = "postgres",
         password = "admin",
         port = 5432
@@ -1911,7 +1908,7 @@ def rep_MainKB(message):
     def request_product_1(message):
         con = psycopg2.connect(  # Start Database Connection
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -2012,7 +2009,7 @@ def rep_MainKB(message):
         con = psycopg2.connect(  # Start Database Connection
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -2187,7 +2184,7 @@ def rep_MainKB(message):
         con = psycopg2.connect(  # Start Database Connection
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -2234,7 +2231,7 @@ def rep_MainKB(message):
         con = psycopg2.connect(  # Start Database Connection
 
             host = "localhost",
-            database = "db1",
+            database = "bablyon_db",
             user = "postgres",
             password = "admin",
             port = 5432
@@ -2255,7 +2252,11 @@ def rep_MainKB(message):
 #------------------------------------------------
 #---------------------------------------------------        
 
-    if message.text == "طلب منتج":
+    if message.text == "/AdminCP":
+        admin_cp1(message)
+    elif message.text == "/start":
+        start(message)
+    elif message.text == "طلب منتج":
         choose_product_1(message)
     elif message.text == "لائحة الأسعار":
         price_list1(message)
