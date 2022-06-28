@@ -1,4 +1,6 @@
 
+from email import message
+
 import os
 import sys
 import glob
@@ -14,7 +16,33 @@ from decouple import config
 
 BOT_TOKEN = config('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
-admin_ids = [301284229]
+admin_ids = [301284229, 1023605829, 295651970]
+
+
+DB_HOST = config('DB_HOST')
+DB_NAME = config('DB_NAME')
+DB_USERN = config('DB_USERN')
+DB_PASS = config('DB_PASS')
+
+con = psycopg2.connect(  # Start Database Connection
+
+                host = DB_HOST,
+                database = DB_NAME,
+                user = DB_USERN,
+                password = DB_PASS,
+                port = 5432
+            )
+cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
+create_script = ''' CREATE TABLE IF NOT EXISTS tb1 (
+                        ID      int PRIMARY KEY,
+                        username    text NOT NULL,
+                        balance  int)'''
+cur.execute(create_script)
+cur.execute("INSERT INTO tb1 (ID, username) VALUES(%s, %s)", (1234, "Majdkh"))
+con.commit()
+cur.close()
+con.close() # End Database Connection
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
@@ -89,7 +117,7 @@ payKB.add(visa_1BTN, visa_2BTN, payeerBTN, yobitBTN, syriatelBTN, mtnBTN, haramB
 # Visa Token Mergable - Pay Menu 
 visatoken_1KB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
 confirm_BTN = types.KeyboardButton("تأكيد")
-cancel_BTN = types.KeyboardButton("إلغاء")
+cancel_BTN = types.KeyboardButton("إلغاء ❌")
 visatoken_1KB.add(confirm_BTN, cancel_BTN, returnToMainBTN)
 # ---------------------------------
 # Yobit Code - Pay Menu 
@@ -139,14 +167,14 @@ price_listKB.add(blc_priceBTN, product_priceBTN, returnToMainBTN)
 # -------------------------------------------------------
 # Admin Control Panel - Main
 admin_cpKB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
-add_balanceBTN = types.KeyboardButton("إضافة رصيد")
-reduce_balanceBTN = types.KeyboardButton("إنقاص رصيد")
-get_balanceBTN = types.KeyboardButton("استعلام عن رصيد")
-send_productBTN = types.KeyboardButton("إرسال منتج")
-update_pricelistBTN = types.KeyboardButton("تحديث لائحة الأسعار")
-reportsBTN = types.KeyboardButton("التقارير")
-verify_paymentsBTN = types.KeyboardButton("تأكيد الدفعات")
-send_messageBTN = types.KeyboardButton("إرسال رسالة")
+add_balanceBTN = types.KeyboardButton("إضافة رصيد ⬆️")
+reduce_balanceBTN = types.KeyboardButton("إنقاص رصيد ⬇️")
+get_balanceBTN = types.KeyboardButton("استعلام عن رصيد ❓")
+send_productBTN = types.KeyboardButton("إرسال منتج 🚚")
+update_pricelistBTN = types.KeyboardButton("تحديث لائحة الأسعار ♻️")
+reportsBTN = types.KeyboardButton("التقارير 📊")
+verify_paymentsBTN = types.KeyboardButton("تأكيد الدفعات 💰")
+send_messageBTN = types.KeyboardButton("إرسال رسالة 📝")
 admin_cpKB.add(add_balanceBTN, reduce_balanceBTN, get_balanceBTN, send_productBTN, update_pricelistBTN, reportsBTN, verify_paymentsBTN, send_messageBTN)
 # ---------------------------------
 # Admin Control Panel - Reports:
@@ -157,6 +185,10 @@ client_reportBTN = types.KeyboardButton("تقرير عن عميل")
 full_reportBTN = types.KeyboardButton("تقرير شامل")
 admincp_BTN = types.KeyboardButton("/AdminCP")
 reportsKB.add(payments_reportBTN, orders_reportBTN, client_reportBTN, full_reportBTN, admincp_BTN)
+# ---------------------------------
+# Only Admin CP:
+only_cpKB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=1)
+only_cpKB.add(admincp_BTN)
 # ---------------------------------
 # Admin Control Panel - Reports - Period:
 periodsKB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
@@ -228,31 +260,35 @@ check_product1KB.add(one_productBTN, many_productBTN, cancel_BTN, admincp_BTN)
 # -----------------------------------------------------------------
 @bot.message_handler(commands = ["AdminCP"])
 def admin_cp1(message):
+    first_name = message.chat.first_name 
     if message.chat.id in admin_ids:
         # Welcome Message
         welcome = bot.send_message(message.chat.id,
-        "أهلاً بك في لوحةالتحكم الخاصة بالمشرفين \n يمكنك الضغط على الأمر المطلوب تنفيذه", reply_markup = admin_cpKB)
+        "أهلا وسهلا *{}* ❤️ \n هاي اللوحة خاصة بالمشرفين 😎، اكبس عالزر اللي بيلزمك 👍🏻".format(first_name),
+        reply_markup = admin_cpKB, parse_mode="Markdown")
         bot.register_next_step_handler(welcome, admin_cp2)
     elif message.chat.id not in admin_ids:
         bot.send_message(message.chat.id,
-        "عذراً، ليس لديك الإذن للوصول إلى هذه القائمة.")
+        "بعتذر منك، ماعندك الصلاحية لتدخل هاي القائمة 🙂")
+
+
 #-------------------
 def admin_cp2(message):
-    if message.text == "إضافة رصيد":
+    if message.text == "إضافة رصيد ⬆️":
         add_balance_step1(message)
-    elif message.text == "إنقاص رصيد":
+    elif message.text == "إنقاص رصيد ⬇️":
         reduce_balance_step1(message)
-    elif message.text == "استعلام عن رصيد":
+    elif message.text == "استعلام عن رصيد ❓":
         get_balance_step1(message)
-    elif message.text == "إرسال منتج":
+    elif message.text == "إرسال منتج 🚚":
         send_product1(message)
-    elif message.text == "تحديث لائحة الأسعار":
+    elif message.text == "تحديث لائحة الأسعار ♻️":
         update_price_list1(message)
-    elif message.text == "إرسال رسالة":
+    elif message.text == "إرسال رسالة 📝":
         send_message1(message)
-    elif message.text == "التقارير":
+    elif message.text == "التقارير 📊":
         choose_report1(message)
-    elif message.text == "تأكيد الدفعات":
+    elif message.text == "تأكيد الدفعات 💰":
         verify_payment1(message)
     elif message.text == "/start":
         start(message)
@@ -284,10 +320,10 @@ def update_price_list2(message):
 def update_price_list3(message):
     con = psycopg2.connect(  # Start Database Connection
 
-                host = "localhost",
-                database = "bablyon_db",
-                user = "postgres",
-                password = "admin",
+                host = DB_HOST,
+                database = DB_NAME,
+                user = DB_USERN,
+                password = DB_PASS,
                 port = 5432
             )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -309,7 +345,7 @@ def update_price_list3(message):
         "يرجى كتابة السعر الجديد", reply_markup=update_priceKB)
         bot.register_next_step_handler(update_ask, update_price_list4, product)
 
-    elif message.text == "إلغاء":
+    elif message.text == "إلغاء ❌":
         bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=admin_cpKB)
         update_price_list1(message)
     elif message.text == "/AdminCP":
@@ -321,14 +357,14 @@ def update_price_list3(message):
 def update_price_list4(message, product):
     con = psycopg2.connect(  # Start Database Connection
 
-                host = "localhost",
-                database = "bablyon_db",
-                user = "postgres",
-                password = "admin",
+                host = DB_HOST,
+                database = DB_NAME,
+                user = DB_USERN,
+                password = DB_PASS,
                 port = 5432
             )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "إلغاء" and message.text != "Visa Token \"لا تدمج\""
+    if (message.text != "إلغاء ❌" and message.text != "Visa Token \"لا تدمج\""
     and message.text != "Visa Token \"تدمج\"" and message.text != "/AdminCP"
     and  message.text != "Payeer" and message.text != "Yobit Code"
     and  message.text != "Syriatel Cash" and message.text != "MTN Cash"):
@@ -337,10 +373,10 @@ def update_price_list4(message, product):
         new_price = str(message.text)
         con = psycopg2.connect(  # Start Database Connection
 
-                host = "localhost",
-                database = "bablyon_db",
-                user = "postgres",
-                password = "admin",
+                host = DB_HOST,
+                database = DB_NAME,
+                user = DB_USERN,
+                password = DB_PASS,
                 port = 5432
             )
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -352,7 +388,7 @@ def update_price_list4(message, product):
         update_value = (new_price, msg_dt, username, product)
         cur.execute(update_script, update_value)
         bot.send_message(message.chat.id, "تم تعديل السعر بنجاح !", reply_markup=admin_cpKB)
-    elif message.text == "إلغاء":
+    elif message.text == "إلغاء ❌":
         bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=admin_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)
@@ -366,37 +402,38 @@ def update_price_list4(message, product):
 # Ask For Username
 def add_balance_step1(message):
     username_ask = bot.send_message(message.chat.id,
-    "من فضلك قم بإرسال اسم المستخدم الذي تريد إضافة الرصيد له بالشكل التالي:\n@username" ,reply_markup=update_priceKB)
+    "اكتبلي اسم المستخدم اللي بدك تضفله رصيد 😁:\n@username",
+    reply_markup=update_priceKB)
     bot.register_next_step_handler(username_ask, add_balance_step2)
 #-------------------
 # Ask For Balance
 def add_balance_step2(message):
     con = psycopg2.connect(  # Start Database Connection
 
-                host = "localhost",
-                database = "bablyon_db",
-                user = "postgres",
-                password = "admin",
+                host = DB_HOST,
+                database = DB_NAME,
+                user = DB_USERN,
+                password = DB_PASS,
                 port = 5432
             )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         username_answer = str(message.text)
         select_script = "SELECT * FROM clients WHERE username = %s"
         select_value = (username_answer, )
         cur.execute(select_script, select_value)
         if bool(cur.rowcount) == True:
-            print("User " + username_answer + " Exists")
             balance_ask = bot.send_message(message.chat.id,
-            "من فضلك قم بإرسال قيمة الرصيد الذي تريد تحويله" ,reply_markup=update_priceKB)
+            "اكتبلي الرصيد اللي بدك تضيفه لـ *{}*".format(username_answer) ,reply_markup=update_priceKB, parse_mode="Markdown")
             bot.register_next_step_handler(balance_ask, add_balance_step3, username_answer)
         elif bool(cur.rowcount) == False:
-            bot.send_message(message.chat.id,
-            "المستخدم " + username_answer + " غير موجود، تأكد من الاسم مرة أخرى.")
-            add_balance_step1(message)           
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        admin_cp1(message)
+            username_ask = bot.send_message(message.chat.id,
+            "ما قدرت ألاقي *{}* بقاعدة البيانات 🙁 .. جرب مرة تانية".format(username_answer),
+            reply_markup=update_priceKB, parse_mode="Markdown")
+            bot.register_next_step_handler(username_ask, add_balance_step2)           
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية",  reply_markup=only_cpKB)
+        
     elif message.text == "/AdminCP":
         admin_cp1(message)
     con.commit()
@@ -407,16 +444,16 @@ def add_balance_step2(message):
 def add_balance_step3(message, username_answer):
     con = psycopg2.connect(  # Start Database Connection
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         # Old Balance
-        balance_answer = str(message.text)
+        balance_answer = message.text
         #------------------
         # Getting old balance & tele_id
         select_script =  'SELECT * FROM clients WHERE username = %s'
@@ -439,17 +476,17 @@ def add_balance_step3(message, username_answer):
         #-------------------------------
         # Succes Message For Admin & Client
         bot.send_message(message.chat.id, # For Admin
-        "تمت إضافة " + balance_answer + " SP إلى رصيد " + username + " بنجاح !" +
-        "\n الرصيد السابق: " + old_balance + " SP" +
-        "\n الرصيد الحالي: " + new_balance + " SP")
+        "تمت إضافة *{}* SP إلى رصيد *{}* بنجاح !".format(f'{int(balance_answer):,}', username) +
+        "\n الرصيد السابق: *{}* SP".format(f'{int(old_balance):,}') +
+        "\n الرصيد الحالي: *{}* SP".format(f'{int(new_balance):,}'), reply_markup=only_cpKB, parse_mode="Markdown")
         bot.send_message(tele_id, # For Client
-        "تمت إضافة " + balance_answer + " SP إلى رصيدك بنجاح !" +
-        "\nرصيدك السابق: " + old_balance + " SP" +
-        "\nرصيدك الحالي: " + new_balance + " SP")
-        admin_cp1(message)
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        admin_cp1(message)
+        "تم إضافة *{}* SP لرصيدك 😍!".format(f'{int(balance_answer):,}') +
+        "\nرصيدك السابق: *{}* SP".format(f'{int(old_balance):,}') +
+        "\nرصيدك الحالي: *{}* SP".format(f'{int(new_balance):,}'), reply_markup=mainKB , parse_mode="Markdown")
+        
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
+        
     elif message.text == "/AdminCP":
         admin_cp1(message)
     con.commit()
@@ -462,36 +499,38 @@ def add_balance_step3(message, username_answer):
 # Ask For Username
 def reduce_balance_step1(message):
     username_ask = bot.send_message(message.chat.id,
-    "من فضلك قم بإرسال اسم المستخدم الذي تريد إنقاص الرصيد له بالشكل التالي:\n@username",reply_markup=update_priceKB)
+    "اكتبلي اسم المستخدم اللي بدك تنقصله رصيده:\n@username",
+    reply_markup=update_priceKB)
     bot.register_next_step_handler(username_ask, reduce_balance_step2)
 #-------------------
 # Ask For Balance
 def reduce_balance_step2(message):
     con = psycopg2.connect(  # Start Database Connection
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         username_answer = message.text
         select_script = "SELECT * FROM clients WHERE username = %s"
         select_value = (username_answer, )
         cur.execute(select_script, select_value)
         if bool(cur.rowcount) == True:
             balance_ask = bot.send_message(message.chat.id,
-            "من فضلك قم بإرسال قيمة الرصيد الذي تريد إنقاصه", reply_markup=update_priceKB)
+            "اكتبلي الرصيد اللي بدك تنقصه من *{}*".format(username_answer) ,reply_markup=update_priceKB, parse_mode="Markdown")
             bot.register_next_step_handler(balance_ask, reduce_balance_step3, username_answer)
         elif bool(cur.rowcount) == False:
-            bot.send_message(message.chat.id,
-            "المستخدم " + username_answer + " غير موجود، تأكد من الاسم مرة أخرى.")
-            reduce_balance_step1(message)      
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        admin_cp1(message)
+            username_ask = bot.send_message(message.chat.id,
+            "ما قدرت ألاقي *{}* بقاعدة البيانات 🙁 .. جرب مرة تانية".format(username_answer),
+            reply_markup=update_priceKB, parse_mode="Markdown")
+            bot.register_next_step_handler(username_ask, reduce_balance_step2)
+            
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية",  reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)  
     con.commit()
@@ -502,14 +541,14 @@ def reduce_balance_step2(message):
 def reduce_balance_step3(message, username_answer):
     con = psycopg2.connect(  # Start Database Connection
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         # Old Balance
         balance_answer = message.text
         #------------------
@@ -521,7 +560,7 @@ def reduce_balance_step3(message, username_answer):
             tele_id = record['tele_id']
             old_balance = str(record['balance'])
             username = record['username']
-        if old_balance >= balance_answer:
+        if int(old_balance) >= int(balance_answer):
             #------------------------
             # Updating The Balance
             update_script = 'UPDATE clients SET balance = balance - %s WHERE username = %s'
@@ -535,21 +574,23 @@ def reduce_balance_step3(message, username_answer):
             #-------------------------------
             # Succes Message For Admin & Client
             bot.send_message(message.chat.id, # For Admin
-            "تم إنقاص " + balance_answer + " SP من رصيد " + username + " بنجاح" +
-            "\n الرصيد السابق: " + old_balance + " SP" +
-            "\n الرصيد الحالي: " + new_balance + " SP")
+            "تم إنقاص *{}* SP من رصيد *{}* بنجاح".format(f'{int(balance_answer):,}', username) +
+            "\n الرصيد السابق: *{}* SP".format(f'{int(old_balance):,}') +
+            "\n الرصيد الحالي: *{}* SP".format(f'{int(new_balance):,}'), reply_markup=only_cpKB, parse_mode="Markdown")
             bot.send_message(tele_id, # For Client
-            "تم إنقاص " + balance_answer + " SP من رصيدك" +
-            "\nرصيدك السابق: " + old_balance + " SP" +
-            "\nرصيدك الحالي: " + new_balance + " SP")
-            admin_cp1(message)
+            "تم إنقاص *{}* SP من رصيدك".format(f'{int(balance_answer):,}') +
+            "\nرصيدك السابق: *{}* SP".format(f'{int(old_balance):,}') +
+            "\nرصيدك الحالي: *{}* SP".format(f'{int(new_balance):,}'), reply_markup=mainKB , parse_mode="Markdown")
+            
         elif old_balance < balance_answer:
-            bot.send_message(message.chat.id,
-            "خطأ، لا يمكن أن يكون الرصيد المراد إنقاصه أكبر من الرصيد الحالي.\n الرصيد الحالي: " + old_balance + "\n حاول مرة أخرى")
-            reduce_balance_step1(message)
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        admin_cp1(message)
+            balance_ask = bot.send_message(message.chat.id,
+            "ما بيصير يكون الرصيد اللي بدك تنقصه أكبر من الرصيد الحالي 😐" + 
+            "\n الرصيد الحالي: *{}*".format(f'{int(old_balance):,}') +
+            "\n جرب مرة تانية", reply_markup=update_priceKB, parse_mode="Markdown")
+            bot.register_next_step_handler(balance_ask, reduce_balance_step3, username_answer)
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية",  reply_markup=only_cpKB)
+        
     elif message.text == "/AdminCP":
         admin_cp1(message)  
     con.commit()
@@ -561,20 +602,20 @@ def reduce_balance_step3(message, username_answer):
 # Get Client Balance By Admin
 def get_balance_step1(message):
     username_ask = bot.send_message(message.chat.id,
-    "من فضلك قم بإرسال اسم المستخدم الذي تريد الاستفسار عن رصيده بالشكل التالي:\n@username",reply_markup=update_priceKB)
+    "اكتبلي اسم المستخدم اللي بدك تستفسر عن رصيده:\n@username",reply_markup=update_priceKB)
     bot.register_next_step_handler(username_ask, get_balance_step2)
 #-------------------
 def get_balance_step2(message):
     con = psycopg2.connect(  # Start Database Connection
 
-        host = "localhost",
-        database = "bablyon_db",
-        user = "postgres",
-        password = "admin",
+        host = DB_HOST,
+        database = DB_NAME,
+        user = DB_USERN,
+        password = DB_PASS,
         port = 5432
     )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         username_answer = message.text
         select_script = "SELECT * FROM clients WHERE username = %s"
         select_value = (username_answer, )
@@ -586,18 +627,16 @@ def get_balance_step2(message):
                 balance = str(record['balance'])
                 username = str(record['username'])
             bot.send_message(message.chat.id,
-            "ID: " + user_ID + "\n اسم المستخدم: " + username + "\n الرصيد الحالي: " + balance + " SP")
-            admin_cp1(message)
+            "ID: `{}`".format(user_ID) + 
+            "\n اسم المستخدم: *{}*".format(username) + 
+            "\n الرصيد الحالي: *{}*".format(f'{int(balance):,}') + " SP", reply_markup=only_cpKB, parse_mode="Markdown")
         elif bool(cur.rowcount) == False:
-            bot.send_message(message.chat.id,
-            "المستخدم " + username_answer + " غير موجود، تأكد من الاسم مرة أخرى.")
-            add_balance_step1(message) 
-        select_script =  'SELECT * FROM clients WHERE username = %s'
-        select_value = (username_answer,)
-        
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        admin_cp1(message)
+            username_ask = bot.send_message(message.chat.id,
+            "ما قدرت ألاقي *{}* بقاعدة البيانات 🙁 .. جرب مرة تانية".format(username_answer),
+            reply_markup=update_priceKB, parse_mode="Markdown")
+            bot.register_next_step_handler(username_ask, get_balance_step2)        
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)  
     
@@ -610,20 +649,20 @@ def get_balance_step2(message):
 # Verify Payments
 def verify_payment1(message):
     id_ask = bot.send_message(message.chat.id,
-    "من فضلك قم بإرسال المعرف الخاصة بالدفعة (Payment ID)", reply_markup = update_priceKB)
+    "اكتبلي المعرف الخاص بالدفعة (Payment ID)", reply_markup = update_priceKB)
     bot.register_next_step_handler(id_ask, verify_payment2)
 #-------------------
 def verify_payment2(message):
     con = psycopg2.connect(  # Start Database Connection
 
-        host = "localhost",
-        database = "bablyon_db",
-        user = "postgres",
-        password = "admin",
+        host = DB_HOST,
+        database = DB_NAME,
+        user = DB_USERN,
+        password = DB_PASS,
         port = 5432
     )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         payment_id = str(message.text)
         select_script = "SELECT * FROM received_payments WHERE id = %s"
         select_value = (payment_id, )
@@ -637,16 +676,16 @@ def verify_payment2(message):
                 status = record["status"]
             # Checking If The Payment is Already Paid
             if status == "pending":
-                value_ask = bot.send_message(message.chat.id, "من فضلك قم بإرسال قيمة الدفعة بعملة الدفعة ذاتها", reply_markup = update_priceKB)
+                value_ask = bot.send_message(message.chat.id, "اكتبلي قيمة الدفعة بعملة الدفعة نفسها", reply_markup = update_priceKB)
                 bot.register_next_step_handler(value_ask, verify_payment3, payment_id)
             elif status == "paid":
-                bot.send_message(message.chat.id, "تم تأكيد ودفع هذه الدفعة سابقاً", reply_markup = update_priceKB)
-                admin_cp1(message)
+                id_ask = bot.send_message(message.chat.id, "هاي الدفعة مأكدة من قبل .. جرب مرة تانية", reply_markup = update_priceKB)
+                bot.register_next_step_handler(id_ask, verify_payment2)
         elif bool(cur.rowcount) == False:
-            bot.send_message(message.chat.id, "عذراً، لا يوجد دفعة سابقة تحمل هذا المعرف.")
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        admin_cp1(message)
+            id_ask = bot.send_message(message.chat.id, "ما قدرت ألاقي هاي الدفعة بقاعدة البيانات 🙁 .. جرب مرة تانية")
+            bot.register_next_step_handler(id_ask, verify_payment2)
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message) 
     con.commit()
@@ -656,14 +695,14 @@ def verify_payment2(message):
 def verify_payment3(message, payment_id):
     con = psycopg2.connect(  # Start Database Connection
 
-        host = "localhost",
-        database = "bablyon_db",
-        user = "postgres",
-        password = "admin",
+        host = DB_HOST,
+        database = DB_NAME,
+        user = DB_USERN,
+        password = DB_PASS,
         port = 5432
     )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         code_value = message.text
         # Gathering Order Information
         script_select = "SELECT * FROM received_payments WHERE id = %s"
@@ -679,23 +718,21 @@ def verify_payment3(message, payment_id):
             taken = record["taken"]
         balance_add = int(code_value)*int(price)
         bot.send_message(message.chat.id, "معلومات الدفعة:"
-                    + "\n Payment_ID: " + payment_id
-                    + "\n Type: " + type
-                    + "\n Username: " + username
-                    + "\n Receive Date: " + str(receive_dt)
-                    + "\n Status: " + status
-                    + "\n taken: " + str(taken)
+                    + "\n Payment ID: `{}`".format(payment_id)
+                    + "\n النوع: *{}*".format(type)
+                    + "\n اسم المستخدم: *{}*".format(username)
+                    + "\n تاريخ الاستلام: *{}*".format(receive_dt)
+                    + "\n الحالة: *{}*".format(status)
+                    + "\n حالة الاستلام: *{}*".format(taken)
                     + "\n------------------"
-                    + "\n Payment Code: " + code
-                    + "\n Price: " + str(price) + " SP"
-                    + "\n Code Value: " + str(code_value)
-                    + "\n Balance Will Be Credited: " + str(balance_add) + " SP")
-        check_ask = bot.send_message(message.chat.id, "هل تريد تأكيد الدفعة؟", reply_markup=check_orderKB)
+                    + "\n الكود الخاص بالدفعة: `{}`".format(code)
+                    + "\n سعر الشراء: *{:,}*".format(price) + " SP"
+                    + "\n قيمة الكود: *{}*".format(code_value)
+                    + "\n الرصيد اللي رح ينضاف: *{:,}*".format(balance_add) +  " SP", parse_mode="Markdown")
+        check_ask = bot.send_message(message.chat.id, "بدك تأكد الدفعة؟", reply_markup=check_orderKB)
         bot.register_next_step_handler(check_ask, verify_payment4, payment_id, code_value)
-        
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        admin_cp1(message)
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)  
     con.commit()
@@ -705,10 +742,10 @@ def verify_payment3(message, payment_id):
 def verify_payment4(message, payment_id, code_value):
     con = psycopg2.connect(  # Start Database Connection
 
-        host = "localhost",
-        database = "bablyon_db",
-        user = "postgres",
-        password = "admin",
+        host = DB_HOST,
+        database = DB_NAME,
+        user = DB_USERN,
+        password = DB_PASS,
         port = 5432
     )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -741,17 +778,17 @@ def verify_payment4(message, payment_id, code_value):
         #-------------------------------
         # Succes Message For Admin & Client
         bot.send_message(message.chat.id, # For Admin
-        "تم تأكيد الدفعة الخاصة بـ " + username +
-        "\n ذات المعرف: " + payment_id +
-        "\n من نوع  " + type +
-        "\n وإضافة " + str(balance_add) + " SP إلى رصيد " + username + " بنجاح !" +
-        "\n الرصيد السابق: " + str(old_balance) + " SP" +
-        "\n الرصيد الحالي: " + str(new_balance) + " SP")
+        "تم تأكيد الدفعة الخاصة بـ *{}*".format(username) +
+        "\n Payment ID: `{}`".format(payment_id) +
+        "\n من نوع  *{}*".format(type)  +
+        "\n وإضافة *{:,}* SP إلى رصيد *{}* بنجاح !".format(balance_add, username) +
+        "\n الرصيد السابق: *{:,}* SP".format(int(old_balance)) +
+        "\n الرصيد الحالي: *{:,}* SP".format(int(new_balance)), parse_mode="Markdown", reply_markup=only_cpKB)
         bot.send_message(user_id, # For Client
         "تم تأكيد الدفعة الخاصة بك " +
-        "وإضافة " + str(balance_add) + " SP إلى رصيدك بنجاح !" +
-        "\nرصيدك السابق: " + str(old_balance) + " SP" +
-        "\nرصيدك الحالي: " + str(new_balance) + " SP")
+        "\nوإضافة *{:,}* SP إلى رصيدك بنجاح !".format(balance_add) + 
+        "\nرصيدك السابق: *{:,}* SP".format(int(old_balance)) + 
+        "\nرصيدك الحالي: *{:,}* SP".format(int(new_balance)), parse_mode="Markdown", reply_markup=mainKB)
         #-------------------------------
         # Changing Deliver Status & Date in the Database
         check_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
@@ -763,12 +800,9 @@ def verify_payment4(message, payment_id, code_value):
                         WHERE id = %s"""
         update_value = (True, check_dt, "paid", code_value, payment_id)
         cur.execute(update_script, update_value)
-        
-        admin_cp1(message)
-        #--------------------------
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        admin_cp1(message)
+    #--------------------------
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)
     con.commit()
@@ -780,30 +814,32 @@ def verify_payment4(message, payment_id, code_value):
 # Send Products to users
 def send_product1(message):
     order_ask = bot.send_message(message.chat.id,
-    "هل الطلب موجود مسبقاً؟ ، أم تريد إنشاء طلب جديد؟", reply_markup = send_productKB)
+    "الطلب موجود من قبل؟ ولا بدك تعمل طلب جديد؟ 🤔 ", reply_markup = send_productKB)
     bot.register_next_step_handler(order_ask, send_product2)
 #-------------------
 def send_product2(message):
     if message.text == "طلب سابق":
         id_ask = bot.send_message(message.chat.id,
-        "من فضلك قم بإرسال المعرف الخاص بالطلب (order_id)", reply_markup = update_priceKB)
+        "ابعتلي المعرف الخاص بالطلب (order_id)", reply_markup = update_priceKB)
         bot.register_next_step_handler(id_ask, send_product3)
     elif message.text == "طلب جديد":
-        send_product_new1(message)
+        username_ask = bot.send_message(message.chat.id,
+        "اكتبلي اسم المستخدم اللي بدك تبعتله المنتج", reply_markup=update_priceKB)
+        bot.register_next_step_handler(username_ask, send_product_new2)
     elif message.text == "/AdminCP":
         admin_cp1(message)
 #-------------------
 def send_product3(message):
     con = psycopg2.connect(  # Start Database Connection
 
-        host = "localhost",
-        database = "bablyon_db",
-        user = "postgres",
-        password = "admin",
+        host = DB_HOST,
+        database = DB_NAME,
+        user = DB_USERN,
+        password = DB_PASS,
         port = 5432
     )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         order_id = message.text
         # Gathering Order Information
         script_select = "SELECT * FROM product_orders WHERE id = %s"
@@ -820,31 +856,31 @@ def send_product3(message):
                 order_dt = record["order_dt"]
                 status = record["status"]
                 delivered = record["delivered"]
-            if delivered == False:
+            if delivered == "no":
                 bot.send_message(message.chat.id, "معلومات الطلب:"
-                            + "\n المعرف (Order_ID): " + order_id
-                            + "\n اسم المنتج: " + product
-                            + "\n سعر المبيع: " + str(price) + " SP"
-                            + "\n الكمية: " + str(qnt)
-                            + "\n السعر الإجمالي: " + str(total_price) + " SP"
-                            + "\n اسم المستخدم: " + username
-                            + "\n تاريخ الطلب: " + str(order_dt)
-                            + "\n الحالة: " + status
-                            + "\n تم التسليم: " + str(delivered))
+                            + "\n Order ID : `{}`".format(order_id)
+                            + "\n اسم المنتج: *{}*".format(product)
+                            + "\n سعر المبيع: *{:,}*".format(price) + " SP"
+                            + "\n الكمية: *{}*".format(qnt)
+                            + "\n السعر الإجمالي: *{:,}*".format(total_price) + " SP"
+                            + "\n اسم المستخدم: *{}*".format(username)
+                            + "\n تاريخ الطلب: *{}*".format(order_dt)
+                            + "\n الحالة: *{}*".format(status)
+                            + "\n تم التسليم: *{}*".format(delivered), parse_mode="Markdown")
                 check_ask = bot.send_message(message.chat.id,
-                "هل تريد إرسال الطلب؟", reply_markup=check_orderKB)
+                "بدك تبعت المنتجات؟", reply_markup=check_orderKB)
                 bot.register_next_step_handler(check_ask, send_product4, order_id)
-            elif delivered == True:
-                bot.send_message(message.chat.id,
-                "تم تسليم هذا الطلب بالفعل")
-                admin_cp1(message)
+            elif delivered == "yes":
+                id_ask = bot.send_message(message.chat.id,
+                "تم تسليم الطلب سابقاً .. جرب مرة تانية", reply_markup = update_priceKB)
+                bot.register_next_step_handler(id_ask, send_product3)
+                
         elif bool(cur.rowcount) == False:
-            bot.send_message(message.chat.id,
-            "عذراً، لا يوجد طلب سابق يحمل  هذا المعرف.")
-            send_product1(message)
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        send_product1(message)
+            id_ask = bot.send_message(message.chat.id,
+            "ما قدرت ألاقي الطلب بقاعدة البيانات .. جرب مرة تانية", reply_markup = update_priceKB)
+            bot.register_next_step_handler(id_ask, send_product3)
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)  
     
@@ -855,15 +891,15 @@ def send_product3(message):
 def send_product4(message, order_id):
     con = psycopg2.connect(  # Start Database Connection
 
-        host = "localhost",
-        database = "bablyon_db",
-        user = "postgres",
-        password = "admin",
+        host = DB_HOST,
+        database = DB_NAME,
+        user = DB_USERN,
+        password = DB_PASS,
         port = 5432
     )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if message.text == "تأكيد":
-        pass
+        
         # Gathering Order Information
         script_select = "SELECT * FROM product_orders WHERE id = %s"
         script_value = (order_id, )
@@ -925,26 +961,27 @@ def send_product4(message, order_id):
             # Success Message - Admin        
             for id in admin_ids:
                 bot.send_message(id, "تم إرسال المنتج بنجاح !"
-                + "\n المعرف (Order_ID): " + order_id
-                + "\n اسم المنتج: " + product
-                + "\n سعر المبيع: " + str(price) + " SP"
-                + "\n السعر الإجمالي: " + str(total_price) + " SP"
-                + "\n اسم المستخدم: " + username
-                + "\n تاريخ الطلب: " + str(order_dt)
-                + "\n الحالة: " + status
-                + "\n تم التسليم: " + str(delivered))
+                + "\n Order ID: `{}`".format(order_id)
+                + "\n اسم المنتج: *{}*".format(product)
+                + "\n سعر المبيع: *{:,}*".format(price) + " SP"
+                + "\n السعر الإجمالي: *{:,}*".format(total_price) + " SP"
+                + "\n اسم المستخدم: *{}*".format(username)
+                + "\n تاريخ الطلب: *{}*".format(order_dt)
+                + "\n الحالة: *{}*".format(status)
+                + "\n تم التسليم: *{}*".format(delivered), reply_markup=only_cpKB, parse_mode="Markdown")
             
-            admin_cp1(message)
+            
             #--------------------------
         elif available_products < int(qnt): # No Enough Products => Rejecting Order
-            bot.send_message(message.chat.id, "لا يوجد عدد كافي من المنتجات لإرسال الطلب.")
-            admin_cp1(message)
+            
+            check_ask = bot.send_message(message.chat.id,
+            "ما لقيت عدد كافي من المنتجات 😐", reply_markup=check_orderKB)
+            bot.register_next_step_handler(check_ask, send_product4, order_id)
             
 
         
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        admin_cp1(message)
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)  
     
@@ -956,19 +993,19 @@ def send_product4(message, order_id):
 #-------------------
 def send_product_new1(message):
     username_ask = bot.send_message(message.chat.id,
-    "قم بإرسال اسم المستخدم الذي تريد إرسال المنتج له", reply_markup=update_priceKB)
+    "اكتبلي اسم المستخدم اللي بدك تبعتله المنتج", reply_markup=update_priceKB)
     bot.register_next_step_handler(username_ask, send_product_new2)
 
 def send_product_new2(message):
     con = psycopg2.connect(  # Start Database Connection
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         username = message.text
         select_script = "SELECT * FROM clients WHERE username = %s"
         select_value = (username, )
@@ -976,15 +1013,15 @@ def send_product_new2(message):
         # Checking If the username exists
         if bool(cur.rowcount) == True:
             product_ask = bot.send_message(message.chat.id,
-            "اختر الخدمة أو المنتج الذي تريد إرساله", reply_markup = product_priceKB)
+            "اختار الخدمة أو المنتج الذي بدك تبعته", reply_markup = product_priceKB)
             bot.register_next_step_handler(product_ask, send_product_new3, username)
         elif bool(cur.rowcount) == False:
-            bot.send_message(message.chat.id,
-            "المستخدم " + username + " غير موجود، تأكد من الاسم مرة أخرى.")
-            send_product_new1(message)
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        send_product1(message)
+            username_ask = bot.send_message(message.chat.id,
+            "ما قدرت ألاقي *{}* بقاعدة البيانات 🙁 .. جرب مرة تانية".format(username),
+            reply_markup=update_priceKB, parse_mode="Markdown")
+            bot.register_next_step_handler(username_ask, send_product_new2)
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)  
         
@@ -994,10 +1031,10 @@ def send_product_new2(message):
 
 def send_product_new3(message, username):
     con = psycopg2.connect(  # Start Database Connection
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1050,54 +1087,52 @@ def send_product_new4(message, price, product, product_ans, username):
         msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
         qnt = 1
         order_id = product[0] + product[-1] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
-        list.append((order_id, username, product , qnt, price, "paid", msg_dt))
+        list.append((order_id, username, product , qnt, price, "paid", msg_dt, "no"))
         order_check = bot.send_message(message.chat.id,
-        text = "معلومات الطلب الخاص بك:\n"
-        "اسم المستلم: " + username + "\n" +
-        "اسم المنتج: " + product_ans + "\n" +
-        "الكمية: " + str(qnt) + "\n" +
-        "السعر الإجمالي: " + str(qnt*price) + "\n" +
-        """اضغط زر "تأكيد" لتأكيد الطلب\n
-        اضغط زر "إلغاء" لإلغاء الطلب.""", reply_markup = check_messageKB)
+        text = "معلومات الطلب الخاص بك:"
+        + "\nاسم المستلم: *{}*".format(username)
+        + "\nاسم المنتج: *{}*".format(product_ans)
+        + "\nالكمية: *{}*".format(qnt)
+        + "\nالسعر الإجمالي: *{:,}*".format(int(qnt*price))
+        + "\nاضغط زر \"تأكيد\" لتأكيد الطلب"
+        + "\nاضغط زر \"إلغاء ❌\" لإلغاء الطلب.", reply_markup = check_messageKB, parse_mode="Markdown")
         bot.register_next_step_handler(order_check, send_product_new6, price, qnt, product, order_id, username)
     elif message.text == "طلب كمية":
         qnt_ask = bot.send_message(message.chat.id,
-        "يرجى كتابة الكمية المطلوبة كرقم", reply_markup = send_message2KB)
+        "اكتبلي كمية المنتجات اللي بدك تبعتها", reply_markup = send_message2KB)
         bot.register_next_step_handler(qnt_ask, send_product_new5, price, product, product_ans, username)
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        send_product1(message)
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)  
 
 def send_product_new5(message, price, product, product_ans, username):
-    if (message.text != "/AdminCP") & (message.text != "إلغاء"):
+    if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
         qnt = message.text
         order_id = product[0] + product[-1] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
-        list.append((order_id, username, product , qnt, price, "paid", msg_dt))
+        list.append((order_id, username, product , qnt, price, "paid", msg_dt, "no"))
         order_check = bot.send_message(message.chat.id,
-        text = "معلومات الطلب الخاص بك:\n" + 
-        "اسم المستلم: " + username + "\n" +
-        "اسم المنتج: " + product_ans + "\n" +
-        "الكمية: " + str(qnt) + "\n" +
-        "السعر الإجمالي: " + str(int(qnt)*int(price)) + "\n" +
-        """اضغط زر "تأكيد" لتأكيد الطلب\n
-        اضغط زر "إلغاء" لإلغاء الطلب.""", reply_markup = check_messageKB)
+        text = "معلومات الطلب الخاص بك:"
+        + "\nاسم المستلم: *{}*".format(username)
+        + "\nاسم المنتج: *{}*".format(product_ans)
+        + "\nالكمية: *{}*".format(qnt)
+        + "\nالسعر الإجمالي: *{:,}*".format(int(qnt)*int(price))
+        + "\nاضغط زر \"تأكيد\" لتأكيد الطلب"
+        + "\nاضغط زر \"إلغاء ❌\" لإلغاء الطلب.", reply_markup = check_messageKB, parse_mode="Markdown")
         bot.register_next_step_handler(order_check, send_product_new6, price, qnt, product, order_id, username)
-    elif message.text == "إلغاء":
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        send_product1(message)
+    elif message.text == "إلغاء ❌":
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "/AdminCP":
         admin_cp1(message)  
 
 def send_product_new6(message, price, qnt, product, order_id, username):
     con = psycopg2.connect(  # Start Database Connection
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
             )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1130,7 +1165,7 @@ def send_product_new6(message, price, qnt, product, order_id, username):
             if available_products >= int(qnt): #  Enough Products => Sending Imediatly
                 # Inserting Order in the database
                 for d in list:
-                        script_insert = "INSERT into product_orders (id, client_username, product_name, quantity, price, status, order_dt) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                        script_insert = "INSERT into product_orders (id, client_username, product_name, quantity, price, status, order_dt, delivered) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
                         script_value = d
                         cur.execute(script_insert, script_value)
                 #----------------------------
@@ -1166,7 +1201,7 @@ def send_product_new6(message, price, qnt, product, order_id, username):
                                 delivered = %s,
                                 deliver_dt = %s
                                 WHERE id = %s"""
-                update_value = (True, deliver_dt, order_id)
+                update_value = ("yes", deliver_dt, order_id)
                 cur.execute(update_script, update_value)
                 #-----------------------
                 # Success Message - Admin
@@ -1185,36 +1220,31 @@ def send_product_new6(message, price, qnt, product, order_id, username):
                 #--------------------------
                 bot.send_message(tele_id,
                 "رصيدك السابق: " + old_balance +" SP\nرصيدك الحالي: " + new_balance + " SP")
-                admin_cp1(message)
                 #--------------------------
                 for id in admin_ids:
                     bot.send_message(id, "طلب شراء منتج جديد من قبل " + message.from_user.username
-                    + "\n المعرف __Order_ID__: " + order_id
-                    + "\n اسم المنتج: " + product
-                    + "\n سعر المبيع: " + str(price) + " SP"
-                    + "\n السعر الإجمالي: " + str(total_price) + " SP"
-                    + "\n الاسم الأول: " + first_name
-                    + "\n اسم المستخدم: " + username
-                    + "\n تاريخ الطلب: " + str(order_dt)
-                    + "\n الحالة: " + status
-                    + "\n تم التسليم: " + str(delivered)
-                    + "\n----------------"
-                    + "\n سيتم إرسال المعرف (Order_ID) برسالة منفصلة")
-                    bot.send_message(id, order_id)
+                    + "\n Order ID: `{}`".format(order_id)
+                    + "\n اسم المنتج: *{}*".format(product)
+                    + "\n سعر المبيع: *{:,}*".format(int(price)) + " SP"
+                    + "\n السعر الإجمالي: *{:,}*".format(int(total_price)) + " SP"
+                    #+ "\n الاسم الأول: *{}*".format(first_name)
+                    + "\n اسم المستخدم: *{}*".format(username)
+                    + "\n تاريخ الطلب: *{}*".format(order_dt)
+                    + "\n الحالة: *{}*".format(status)
+                    + "\n تم التسليم: *{}*".format(delivered), parse_mode="Markdown")
+                    
             elif available_products < int(qnt): # No Enough Products => Recording Order
                 bot.send_message(message.chat.id,
-                "عذراً، لا يوجد عدد كافي من المنتجات التي طلبتها")
-                admin_cp1(message)
+                "عذراً، لا يوجد عدد كافي من المنتجات التي طلبتها", reply_markup=only_cpKB)
         elif (int(qnt)*int(price)) > int(old_balance):
             cur.execute(select_script, select_value)
             for record in cur.fetchall():
                 balance = str(record['balance'])
             bot.send_message(message.chat.id,
             "عذراً، ليس لدى " + username + " رصيد كاف لإتمام العملية\n الرصيد الحالي: " + str(balance) + " SP", reply_markup = mainKB)          
-    elif message.text == "إلغاء":
+    elif message.text == "إلغاء ❌":
         list.clear()
-        bot.send_message(message.chat.id, "تم إلغاء العملية")
-        send_product1(message)
+        bot.send_message(message.chat.id, "تم إلغاء العملية", reply_markup=only_cpKB)
     elif message.text == "القائمة الرئيسية":
         list.clear()
         admin_cp1(message)
@@ -1242,7 +1272,7 @@ def send_message2(message):
         "من فضلك قم بإرسال اسم المستخدم بالشكل التالي:\n" + 
         "@username", reply_markup = send_message2KB)
         bot.register_next_step_handler(username_ask, send_message3, type_ans)
-    elif message.text == "إلغاء":
+    elif message.text == "إلغاء ❌":
         bot.send_message(message.chat.id, "تم إلغاء العملية")
         send_message1(message)
     elif message.text == "/AdminCP":
@@ -1251,14 +1281,14 @@ def send_message2(message):
 def send_message3(message, type_ans):
     con = psycopg2.connect(
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "إلغاء") & (message.text != "/AdminCP"):
+    if (message.text != "إلغاء ❌") & (message.text != "/AdminCP"):
         username_ans = message.text
         if type_ans == "رسالة جماعية":
             message_ask = bot.send_message(message.chat.id,
@@ -1277,7 +1307,7 @@ def send_message3(message, type_ans):
                 bot.send_message(message.chat.id,
                 "اسم المستخدم غير موجود، يرجى المحاولة مرة أخرى")
                 send_message1(message)
-    elif message.text == "إلغاء":
+    elif message.text == "إلغاء ❌":
         bot.send_message(message.chat.id, "تم إلغاء العملية")
         send_message1(message)
     elif message.text == "/AdminCP":
@@ -1287,7 +1317,7 @@ def send_message3(message, type_ans):
     con.close()
 #----------------
 def send_message4(message, type_ans, username_ans):
-    if (message.text != "إلغاء") & (message.text != "/AdminCP"):
+    if (message.text != "إلغاء ❌") & (message.text != "/AdminCP"):
         message_ans = str(message.text)
         if type_ans == "رسالة جماعية":
             check_ask = bot.send_message(message.chat.id,
@@ -1301,7 +1331,7 @@ def send_message4(message, type_ans, username_ans):
             message_ans + 
             "\n-------------\n هل تريد تأكيد العملية؟", reply_markup = check_messageKB)
             bot.register_next_step_handler(check_ask, send_message5, message_ans, username_ans, type_ans)
-    elif message.text == "إلغاء":
+    elif message.text == "إلغاء ❌":
         bot.send_message(message.chat.id, "تم إلغاء العملية")
         send_message1(message)
     elif message.text == "/AdminCP":
@@ -1310,10 +1340,10 @@ def send_message4(message, type_ans, username_ans):
 def send_message5(message, message_ans, username_ans, type_ans):
     con = psycopg2.connect(
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1336,7 +1366,7 @@ def send_message5(message, message_ans, username_ans, type_ans):
             bot.send_message(tele_id, message_ans)
             bot.send_message(message.chat.id, "تم إرسال الرسالة بنجاح")
             admin_cp1(message)
-    elif message.text == "إلغاء":
+    elif message.text == "إلغاء ❌":
         bot.send_message(message.chat.id, "تم إلغاء العملية")
         send_message1(message)
     elif message.text == "/AdminCP":
@@ -1373,10 +1403,10 @@ def payments_report1(message):
 def payments_report2(message):
     con = psycopg2.connect(
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1426,10 +1456,10 @@ def orders_report1(message):
 def orders_report2(message):
     con = psycopg2.connect(
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1479,14 +1509,14 @@ def client_report1(message):
 def client_report2(message):
     con = psycopg2.connect(
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
-    if (message.text != "إلغاء") & (message.text != "/AdminCP"):
+    if (message.text != "إلغاء ❌") & (message.text != "/AdminCP"):
         username = message.text
         select_script = "SELECT * FROM clients WHERE username = %s"
         select_value = (username, )
@@ -1573,7 +1603,7 @@ def client_report2(message):
             "اسم المستخدم غير موجود، يرجى المحاولة مرة أخرى")
             client_report1(message)
 
-    elif message.text == "إلغاء":
+    elif message.text == "إلغاء ❌":
         bot.send_message(message.chat.id, "تم إلغاء العملية")
         send_message1(message)
     elif message.text == "/AdminCP":
@@ -1599,10 +1629,10 @@ def start(message):
         # Start Database Connection
         con = psycopg2.connect(
 
-                host = "localhost",
-                database = "bablyon_db",
-                user = "postgres",
-                password = "admin",
+                host = DB_HOST,
+                database = DB_NAME,
+                user = DB_USERN,
+                password = DB_PASS,
                 port = 5432
             )
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1627,11 +1657,14 @@ def start(message):
         cur.close()
         con.close()
     elif (message.from_user.username) is None:
+        first_name = message.chat.first_name
         bot.send_message(message.chat.id, "أهلاً بك في البوت الخاص بنا " + first_name + " !\n" +
         "نأسف لحدوث هذا الخطأ،" + 
          "\n من فضلك قم بإضافة اسم مستخدم (username)" + 
          "\n إلى حسابك على تيليجرام حتى تستطيع استخدام البوت بدون أي مشاكل.")
-
+# -----------------------------------------------------------------
+# -----------------------------------------------------------------
+# -----------------------------------------------------------------
 
 
 
@@ -1656,27 +1689,123 @@ def rep_MainKB(message):
         bot.register_next_step_handler(method_ask, get_method_step2)
     #---------------------------
     def get_method_step2(message):
-        method_ans = message.text
-        if method_ans == "Yobit Code":
-            get_codes_1(message)
-        #---------------------------
-        elif message.text == "Visa Token \"تدمج\"":
-            get_codes_1(message)
-        #---------------------------
-        elif message.text == "Visa Token \"لا تدمج\"":
+        
+        if (message.text == "Visa Token \"تدمج\"") | (message.text == "Visa Token \"لا تدمج\"") | (message.text == "Yobit Code"):
             get_codes_1(message)
         #---------------------------
         elif message.text == "حوالة مالية (هرم)":
             get_photo_1(message)
+        #---------------------------
+        elif (message.text == "Syriatel Cash") | (message.text == "MTN Cash") | (message.text == "Payeer"):
+            get_trancid_1(message)
+    #---------------------------
+    def get_trancid_1(message):
+        con = psycopg2.connect(  # Start Database Connection
+
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
+            port = 5432
+        )
+        cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
+        select_script =  """SELECT * FROM price_list where product_name = %s"""
+        method_ans = message.text
+        if method_ans == "Syriatel Cash":
+            cur.execute(select_script, (method_ans, ))
+            for record in cur.fetchall():
+                price = str(record["price"])
+            type = "Syriatel Cash"
+            ask_text = ("كل 1 ليرة سورية من رصيد Syriatel Cash"+
+            "\n تعادل " + price + " SP من رصيد البوت"+
+            "\n من فضلك قم بإرسال المبلغ عن طريق التحويل اليدوي"+
+            "\n إلى حساب التاجر التالي: 23274248" + 
+            "\n ثم قم بإرسال رقم عملية التحويل هنا" )
+        elif method_ans == "MTN Cash":
+            cur.execute(select_script, (method_ans, ))
+            for record in cur.fetchall():
+                price = str(record["price"])
+            type = "MTN Cash"
+            ask_text = ("كل 1 ليرة سورية من رصيد MTN Cash"+
+            "\n تعادل " + price + " SP من رصيد البوت"+
+            "\n من فضلك قم بإرسال المبلغ عن طريق التحويل اليدوي"+
+            "\n إلى حساب التاجر التالي: 23274248" + 
+            "\n ثم قم بإرسال رقم عملية التحويل هنا" )
+        elif method_ans == "Payeer":
+            cur.execute(select_script, (method_ans, ))
+            for record in cur.fetchall():
+                price = str(record["price"])
+            type = "Payeer"
+            ask_text = ( "نقبل الدفع بعملة USD فقط"
+            "\n كل 1 USD من رصيد Payeer"+
+            "\n تعادل " + price + " SP من رصيد البوت"+
+            "\n من فضلك قم بإرسال المبلغ إلى الحساب التالي: P1028248226" + 
+            "\n ثم قم بإرسال رقم عملية التحويل هنا" )
+        trancid_ask = bot.send_message(message.chat.id, ask_text, reply_markup = send_message2KB)
+        bot.register_next_step_handler(trancid_ask, get_trancid_2, price, type)
+        
+    def get_trancid_2(message, price, type):
+        username = ("@" + message.from_user.username)
+        #---------------------
+        if ((message.text != "إلغاء ❌") & (message.text != "القائمة الرئيسية")):
+            payment_id = type[0:2] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
+            msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
+            list.append((payment_id, username, message.text, type , "no", msg_dt, "pending", price))
+            con = psycopg2.connect(  # Start Database Connection
+
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
+            port = 5432
+            )
+            cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
+            for d in list:
+                script_insert = "INSERT into received_payments (id, source, code, type, taken, receive_dt, status, price) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                script_value = d
+                cur.execute(script_insert, script_value)
+            #------------------------
+            # Sending Payments to Admins
+            for id in admin_ids:
+                bot.send_message(id,
+                "تم استقبال دفعة جديدة !"
+                + "\n Payment_ID: " + payment_id
+                + "\n Type: " + type
+                + "\n Price: " + str(price) + " SP"
+                + "\n First Name: " 
+                + "\n Username: " + username
+                + "\n Date: " + str(msg_dt)
+                + "\n Status: " + "pending"
+                + "\n----------------"
+                + "\n Payment Code: " + message.text
+                + "\n Payment ID will be sent Again seperatly")
+                bot.send_message(id, payment_id)
+            #-----------------------
+            # Success Message
+            bot.send_message(message.chat.id, text =
+            """تم استقبال طلبك بنجاح !\n
+            مدة معالجة الطلب 24 ساعة من تاريخ إرسال رقم عملية التحويل.""", reply_markup = mainKB)
+            con.commit()
+            con.close()
+        #-----------------------
+        elif message.text == "إلغاء ❌":
+            list.clear()
+            # UnSuccess Message
+            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=payKB)
+            get_method_step1(message)
+        elif message.text == "القائمة الرئيسية":
+            list.clear()
+            bot.send_message(message.chat.id,
+            "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
     #---------------------------
     # visa_M & Visa NonM & Yobit Code
     def get_codes_1(message):
         con = psycopg2.connect(  # Start Database Connection
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1724,7 +1853,7 @@ def rep_MainKB(message):
     def get_codes_2(message, price, type):
         username = ("@" + message.from_user.username)
         #---------------------
-        if ((message.text != "تأكيد") & (message.text != "إلغاء")
+        if ((message.text != "تأكيد") & (message.text != "إلغاء ❌")
         & (message.text != "القائمة الرئيسية") & (message.text != "/start")
         & (message.text != "Visa Token \"تدمج\"")):
             payment_id = type[0:2] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
@@ -1741,10 +1870,11 @@ def rep_MainKB(message):
             ("***هذه الخطوة لا يمكن التراجع عنها***" + 
             "\n هل تريد بالتأكيد إرسال البطاقات السابقة جميعها؟"), reply_markup = checkKB)
             bot.register_next_step_handler(check_ask, get_codes_3, price, type)
-        elif message.text == "إلغاء":
+        elif message.text == "إلغاء ❌":
             list.clear()
             # UnSuccess Message
             bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=payKB)
+            get_method_step1(message)
         elif message.text == "القائمة الرئيسية":
             list.clear()
             bot.send_message(message.chat.id,
@@ -1760,10 +1890,10 @@ def rep_MainKB(message):
             # Insert Data Into Database
             con = psycopg2.connect(  # Start Database Connection
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
             )
             cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1799,19 +1929,18 @@ def rep_MainKB(message):
                     + "\n Payment Code: " + payment_code
                     + "\n Payment ID will be sent Again seperatly")
                     bot.send_message(id, payment_id)
-            con.commit()
             #-----------------------
             # Success Message
             bot.send_message(message.chat.id, text =
             """تم استقبال جميع البطاقات بنجاح !\n
             مدة معالجة الطلب 24 ساعة من تاريخ إرسال البطاقة.""", reply_markup = mainKB)
             #-----------------------
-            cur.close()
-            con.close() # End Database Connection
         elif message.text == "لا":
             list.clear()
             # UnSuccess Message
             bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=mainKB)
+        con.commit()
+        con.close() # End Database Connection
     #---------------------------
     # حوالة مالية (هرم)
     def get_photo_1(message):
@@ -1832,20 +1961,20 @@ def rep_MainKB(message):
             """من فضلك قم بإرسال صورة واضحة لوصل التحويل كاملاً،\n
             **مدة معالجة الطلب 24 ساعة من تاريخ إرسال صورة الوصل.""", reply_markup=check3KB)
             bot.register_next_step_handler(photo_ask, get_photo_3)
-        elif message.text == "إلغاء":
+        elif message.text == "إلغاء ❌":
             get_method_step1(message)
         elif message.text == "القائمة الرئيسية":
             bot.send_message(message.chat.id,
             "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
    
     def get_photo_3(message,):
-        if (message.text != "إلغاء") & (message.text != "القائمة الرئيسية") & (message.text != "تأكيد"):
+        if (message.text != "إلغاء ❌") & (message.text != "القائمة الرئيسية") & (message.text != "تأكيد"):
             list.append(message.photo[-1].file_id)
             img = list[0]
             confirm_ask = bot.send_message(message.chat.id,
             text = "اضغط زر \"تأكيد\" لتأكيد العملية.", reply_markup=check2KB)
             bot.register_next_step_handler(confirm_ask, get_photo_4, img,)
-        elif message.text == "إلغاء":
+        elif message.text == "إلغاء ❌":
             get_method_step1(message)
         elif message.text == "القائمة الرئيسية":
             bot.send_message(message.chat.id,
@@ -1854,17 +1983,17 @@ def rep_MainKB(message):
     def get_photo_4(message, img,):
         con = psycopg2.connect(  # Start Database Connection
 
-        host = "localhost",
-        database = "bablyon_db",
-        user = "postgres",
-        password = "admin",
+        host = DB_HOST,
+        database = DB_NAME,
+        user = DB_USERN,
+        password = DB_PASS,
         port = 5432
         )
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         if message.text == "تأكيد":
             # Gathering Information
             payment_id = "Ha" + (message.from_user.username[0:2]) + str(int(time.time())) + (message.from_user.username[-3:-1])
-            msg_dt = datetime.utcnow().strftime("%A %d-%b-%Y %H:%M:%S")
+            msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
             username = "@" + message.from_user.username
             first_name = message.chat.first_name
             price = "1"
@@ -1888,7 +2017,7 @@ def rep_MainKB(message):
             #-----------------------------
             # Client Message
             bot.send_message(message.chat.id, text = "تم استقبال طلبك بنجاح !", reply_markup=mainKB)
-        elif message.text == "إلغاء":
+        elif message.text == "إلغاء ❌":
             get_method_step1(message)
         elif message.text == "القائمة الرئيسية":
             bot.send_message(message.chat.id,
@@ -1907,10 +2036,10 @@ def rep_MainKB(message):
     #---------------------------
     def request_product_1(message):
         con = psycopg2.connect(  # Start Database Connection
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1970,20 +2099,20 @@ def rep_MainKB(message):
             msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
             qnt = 1
             order_id = product[0] + product[-1] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
-            list.append((order_id, username, product , qnt, price, "paid", msg_dt))
+            list.append((order_id, username, product , qnt, price, "paid", msg_dt, "no"))
             order_check = bot.send_message(message.chat.id,
             text = "معلومات الطلب خاص بك:\n"
             "اسم المنتج: " + product_ans + "\n" +
             "الكمية: " + str(qnt) + "\n" +
             "السعر الإجمالي: " + str(qnt*price) + "\n" +
             """اضغط زر "تأكيد" لتأكيد الطلب\n
-            اضغط زر "إلغاء" لإلغاء الطلب.""", reply_markup = check2KB)
+            اضغط زر "إلغاء ❌" لإلغاء الطلب.""", reply_markup = check2KB)
             bot.register_next_step_handler(order_check, request_product_4, price, qnt, product, order_id)
         elif message.text == "طلب كمية":
             qnt_ask = bot.send_message(message.chat.id,
             "يرجى كتابة الكمية المطلوبة كرقم", reply_markup = check3KB)
             bot.register_next_step_handler(qnt_ask, request_product_3, price, product, product_ans)
-        elif message.text == "إلغاء":
+        elif message.text == "إلغاء ❌":
             choose_product_1(message)
         elif message.text == "القائمة الرئيسية":
             bot.send_message(message.chat.id,
@@ -1994,7 +2123,7 @@ def rep_MainKB(message):
         username = ("@" + message.from_user.username)
         qnt = message.text
         order_id = product[0] + product[-1] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
-        list.append((order_id, username, product , qnt, price, "paid", msg_dt))
+        list.append((order_id, username, product , qnt, price, "paid", msg_dt, "no"))
         
         order_check = bot.send_message(message.chat.id,
         text = "معلومات الطلب الخاص بك:\n"
@@ -2002,16 +2131,16 @@ def rep_MainKB(message):
         "الكمية: " + str(qnt) + "\n" +
         "السعر الإجمالي: " + str(int(qnt)*int(price)) + "\n" +
         """اضغط زر "تأكيد" لتأكيد الطلب\n
-        اضغط زر "إلغاء" لإلغاء الطلب.""", reply_markup = check2KB)
+        اضغط زر "إلغاء ❌" لإلغاء الطلب.""", reply_markup = check2KB)
         bot.register_next_step_handler(order_check, request_product_4, price, qnt, product, order_id)
     #---------------------------
     def request_product_4(message, price, qnt, product, order_id):
         con = psycopg2.connect(  # Start Database Connection
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
             )
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -2037,13 +2166,14 @@ def rep_MainKB(message):
             cur.execute(select_script, select_value)
             for record in cur.fetchall():
                 old_balance = str(record['balance'])
+            
             #------------------------------
             # Checking if the balance is enough
             if (int(qnt)*int(price)) <= int(old_balance):
                 first_name = message.chat.first_name
                 # Inserting Order in the database
                 for d in list:
-                        script_insert = "INSERT into product_orders (id, client_username, product_name, quantity, price, status, order_dt) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                        script_insert = "INSERT into product_orders (id, client_username, product_name, quantity, price, status, order_dt, delivered) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
                         script_value = d
                         cur.execute(script_insert, script_value)
                 #----------------------------
@@ -2080,7 +2210,7 @@ def rep_MainKB(message):
                                     delivered = %s,
                                     deliver_dt = %s
                                     WHERE id = %s"""
-                    update_value = (True, deliver_dt, order_id)
+                    update_value = ("yes", deliver_dt, order_id)
                     cur.execute(update_script, update_value)
                      #-----------------------
                     # Success Message - Admin
@@ -2104,7 +2234,7 @@ def rep_MainKB(message):
                         + "\n Total Price: " + str(total_price) + " SP"
                         + "\n First Name: " + first_name
                         + "\n Username: " + username
-                        + "\n Order Date: " + order_dt
+                        + "\n Order Date: " + str(order_dt)
                         + "\n Status: " + status
                         + "\n Delivered: " + "Yes"
                         + "\n----------------"
@@ -2139,7 +2269,7 @@ def rep_MainKB(message):
                         + "\n Total Price: " + str(total_price) + " SP"
                         + "\n First Name: " + first_name
                         + "\n Username: " + username
-                        + "\n Order Date: " + order_dt
+                        + "\n Order Date: " + str(order_dt)
                         + "\n Status: " + status
                         + "\n Delivered: " + "No"
                         + "\n----------------"
@@ -2160,7 +2290,7 @@ def rep_MainKB(message):
                     balance = str(record['balance'])
                 bot.send_message(message.chat.id,
                 "عذراً، ليس لديك رصيد كاف لإتمام العملية\n رصيدك الحالي: " + str(balance) + " SP", reply_markup = mainKB)          
-        elif message.text == "إلغاء":
+        elif message.text == "إلغاء ❌":
             list.clear()
             choose_product_1(message)
         elif message.text == "القائمة الرئيسية":
@@ -2183,10 +2313,10 @@ def rep_MainKB(message):
         list_ans = message.text 
         con = psycopg2.connect(  # Start Database Connection
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -2230,10 +2360,10 @@ def rep_MainKB(message):
         username = "@" + message.from_user.username
         con = psycopg2.connect(  # Start Database Connection
 
-            host = "localhost",
-            database = "bablyon_db",
-            user = "postgres",
-            password = "admin",
+            host = DB_HOST,
+            database = DB_NAME,
+            user = DB_USERN,
+            password = DB_PASS,
             port = 5432
         )
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -2247,7 +2377,6 @@ def rep_MainKB(message):
         con.commit()
         cur.close()
         con.close()
-
 #------------------------------------------------
 #------------------------------------------------
 #---------------------------------------------------        
