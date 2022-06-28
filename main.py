@@ -1,6 +1,3 @@
-
-from email import message
-
 import os
 import sys
 import glob
@@ -57,8 +54,8 @@ telebot.logger.setLevel(logging.INFO)
 MODE = config('MODE')
 if MODE == "dev":
     def run():
-        logger.info("Start in DEV MODE")
-        bot.polling()
+       # logger.info("Start in DEV MODE")
+        bot.infinity_polling()
 elif MODE == "prod":
     def run():
         logger.info("Start in prod MODE")
@@ -100,7 +97,7 @@ elif MODE == "prod":
 else:
     logger.error("No mode specified")
     sys.exit()
-
+#-------------------------------------------------
 list = []
 
 
