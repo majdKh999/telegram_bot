@@ -13,9 +13,11 @@ import datetime
 from datetime import datetime
 import logging 
 from decouple import config
+from aiohttp import web
 
 BOT_TOKEN = config('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
+app = web.Application()
 admin_ids = [301284229, 1023605829, 295651970]
 
 
@@ -48,6 +50,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger()
 
 
+
+
+
+
 MODE = config('MODE')
 if MODE == "dev":
     def run():
@@ -56,8 +62,28 @@ if MODE == "dev":
 elif MODE == "prod":
     def run():
         logger.info("Start in prod MODE")
-        bot.set_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", "8443")), url_path=BOT_TOKEN,
-        webhook_url="https://{}.herokuapp.com/{}".format(os.environ.get("APP_NAME"), BOT_TOKEN))
+        WEBHOOK_HOST = "https://{}.herokuapp.com/{}".format(config("APP_NAME"), BOT_TOKEN)
+        WEBHOOK_PORT = 8443  # 443, 80, 88 or 8443 (port need to be 'open')
+        WEBHOOK_LISTEN = '0.0.0.0'  # In some VPS you may need to put here the IP addr
+
+        WEBHOOK_URL_BASE = "https://{}:{}".format(WEBHOOK_HOST, WEBHOOK_PORT)
+        WEBHOOK_URL_PATH = "/{}/".format(BOT_TOKEN)
+
+
+        # Remove webhook, it fails sometimes the set if there is a previous webhook
+        bot.remove_webhook()
+
+        # Set webhook
+        bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
+
+
+        # Start aiohttp server
+        web.run_app(
+            app,
+            host=WEBHOOK_LISTEN,
+            port=WEBHOOK_PORT,
+        
+        )
 else:
     logger.error("No mode specified")
     sys.exit()
