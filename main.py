@@ -14,7 +14,7 @@ from aiohttp import web
 
 BOT_TOKEN = config('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
-app = web.Application()
+#app = web.Application()
 admin_ids = [301284229, 1023605829, 295651970]
 
 
@@ -37,14 +37,14 @@ create_script = ''' CREATE TABLE IF NOT EXISTS tb1 (
                         username    text NOT NULL,
                         balance  int)'''
 cur.execute(create_script)
-cur.execute("INSERT INTO tb1 (ID, username) VALUES(%s, %s)", (1234, "Majdkh"))
+cur.execute("INSERT INTO tb1 (ID, username) VALUES(%s, %s)", (12345, "Majdkh5"))
 con.commit()
 cur.close()
 con.close() # End Database Connection
 
 
-logger = telebot.logger
-telebot.logger.setLevel(logging.INFO)
+#logger = telebot.logger
+#telebot.logger.setLevel(logging.INFO)
 
 
 
@@ -56,46 +56,8 @@ if MODE == "dev":
     def run():
        # logger.info("Start in DEV MODE")
         bot.infinity_polling()
-elif MODE == "prod":
-    def run():
-        logger.info("Start in prod MODE")
-        WEBHOOK_HOST = "https://{}.herokuapp.com/{}".format(config("APP_NAME"), BOT_TOKEN)
-        WEBHOOK_PORT = 8443  # 443, 80, 88 or 8443 (port need to be 'open')
-        WEBHOOK_LISTEN = '0.0.0.0'  # In some VPS you may need to put here the IP addr
-
-        WEBHOOK_URL_BASE = "https://{}:{}".format(WEBHOOK_HOST, WEBHOOK_PORT)
-        WEBHOOK_URL_PATH = "/{}/".format(BOT_TOKEN)
-
-        # Process webhook calls
-        async def handle(request):
-            if request.match_info.get('token') == bot.token:
-                request_body_dict = await request.json()
-                update = telebot.types.Update.de_json(request_body_dict)
-                bot.process_new_updates([update])
-                return web.Response()
-            else:
-                return web.Response(status=403)
-
-
-        app.router.add_post('/{token}/', handle)
-
-
-        # Remove webhook, it fails sometimes the set if there is a previous webhook
-        bot.remove_webhook()
-
-        # Set webhook
-        bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
-
-
-        # Start aiohttp server
-        web.run_app(
-            app,
-            host=WEBHOOK_LISTEN,
-            port=WEBHOOK_PORT,
-        
-        )
 else:
-    logger.error("No mode specified")
+    #logger.error("No mode specified")
     sys.exit()
 #-------------------------------------------------
 list = []
