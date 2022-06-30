@@ -22,6 +22,7 @@ DB_HOST = config('DB_HOST')
 DB_NAME = config('DB_NAME')
 DB_USERN = config('DB_USERN')
 DB_PASS = config('DB_PASS')
+DATABASE_URL = config('DATABASE_URL')
 
 
 
@@ -30,11 +31,15 @@ DB_PASS = config('DB_PASS')
 
 
 
-
-
-
 MODE = config('MODE')
 if MODE == "dev":
+    def run():
+       # logger.info("Start in DEV MODE")
+        bot.infinity_polling()
+
+
+
+elif MODE == "prod":
     def run():
        # logger.info("Start in DEV MODE")
         bot.infinity_polling()
@@ -298,14 +303,7 @@ def update_price_list2(message):
         admin_cp1(message)
 #-------------------
 def update_price_list3(message):
-    con = psycopg2.connect(  # Start Database Connection
-
-                host = DB_HOST,
-                database = DB_NAME,
-                user = DB_USERN,
-                password = DB_PASS,
-                port = 5432
-            )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     product = message.text
     if (product == "Visa Token \"لا تدمج\"" or product == "Visa Token \"تدمج\""
