@@ -23,21 +23,14 @@ DB_NAME = config('DB_NAME')
 DB_USERN = config('DB_USERN')
 DB_PASS = config('DB_PASS')
 
-con = psycopg2.connect(  # Start Database Connection
-
-                host = DB_HOST,
-                database = DB_NAME,
-                user = DB_USERN,
-                password = DB_PASS,
-                port = 5432
-            )
+con = psycopg2.connect("postgres://ehkwfgouyuvoyn:7d2359310905a6e791b5c3619be45a6a45915d1b2d07c3fc3e4bbd5928e47d6d@ec2-52-72-56-59.compute-1.amazonaws.com:5432/d60crp0tf8d3o1")
 cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
 create_script = ''' CREATE TABLE IF NOT EXISTS tb1 (
                         ID      int PRIMARY KEY,
                         username    text NOT NULL,
                         balance  int)'''
 cur.execute(create_script)
-cur.execute("INSERT INTO tb1 (ID, username) VALUES(%s, %s)", (12345, "Majdkh5"))
+cur.execute("INSERT INTO tb1 (ID, username) VALUES(%s, %s)", (1237454, "Maj6dk4h5"))
 con.commit()
 cur.close()
 con.close() # End Database Connection
