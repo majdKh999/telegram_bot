@@ -333,14 +333,7 @@ def update_price_list3(message):
     con.close() # End Database Connection
 #-------------------
 def update_price_list4(message, product):
-    con = psycopg2.connect(  # Start Database Connection
-
-                host = DB_HOST,
-                database = DB_NAME,
-                user = DB_USERN,
-                password = DB_PASS,
-                port = 5432
-            )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "إلغاء ❌" and message.text != "Visa Token \"لا تدمج\""
     and message.text != "Visa Token \"تدمج\"" and message.text != "/AdminCP"
@@ -349,14 +342,7 @@ def update_price_list4(message, product):
         msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
         username = "@" + message.from_user.username
         new_price = str(message.text)
-        con = psycopg2.connect(  # Start Database Connection
-
-                host = DB_HOST,
-                database = DB_NAME,
-                user = DB_USERN,
-                password = DB_PASS,
-                port = 5432
-            )
+        con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         update_script = """UPDATE price_list SET
                             price = %s,
@@ -386,14 +372,7 @@ def add_balance_step1(message):
 #-------------------
 # Ask For Balance
 def add_balance_step2(message):
-    con = psycopg2.connect(  # Start Database Connection
-
-                host = DB_HOST,
-                database = DB_NAME,
-                user = DB_USERN,
-                password = DB_PASS,
-                port = 5432
-            )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         username_answer = str(message.text)
@@ -420,14 +399,7 @@ def add_balance_step2(message):
 #-------------------
 # Add the requested Balance
 def add_balance_step3(message, username_answer):
-    con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         # Old Balance
@@ -483,14 +455,7 @@ def reduce_balance_step1(message):
 #-------------------
 # Ask For Balance
 def reduce_balance_step2(message):
-    con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         username_answer = message.text
@@ -517,14 +482,7 @@ def reduce_balance_step2(message):
 #-------------------
 # Reduce the requested Balance
 def reduce_balance_step3(message, username_answer):
-    con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         # Old Balance
@@ -584,14 +542,7 @@ def get_balance_step1(message):
     bot.register_next_step_handler(username_ask, get_balance_step2)
 #-------------------
 def get_balance_step2(message):
-    con = psycopg2.connect(  # Start Database Connection
-
-        host = DB_HOST,
-        database = DB_NAME,
-        user = DB_USERN,
-        password = DB_PASS,
-        port = 5432
-    )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         username_answer = message.text
@@ -631,14 +582,7 @@ def verify_payment1(message):
     bot.register_next_step_handler(id_ask, verify_payment2)
 #-------------------
 def verify_payment2(message):
-    con = psycopg2.connect(  # Start Database Connection
-
-        host = DB_HOST,
-        database = DB_NAME,
-        user = DB_USERN,
-        password = DB_PASS,
-        port = 5432
-    )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         payment_id = str(message.text)
@@ -671,14 +615,7 @@ def verify_payment2(message):
     con.close()
 #-------------------
 def verify_payment3(message, payment_id):
-    con = psycopg2.connect(  # Start Database Connection
-
-        host = DB_HOST,
-        database = DB_NAME,
-        user = DB_USERN,
-        password = DB_PASS,
-        port = 5432
-    )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         code_value = message.text
@@ -718,14 +655,7 @@ def verify_payment3(message, payment_id):
     con.close()
 #-------------------
 def verify_payment4(message, payment_id, code_value):
-    con = psycopg2.connect(  # Start Database Connection
-
-        host = DB_HOST,
-        database = DB_NAME,
-        user = DB_USERN,
-        password = DB_PASS,
-        port = 5432
-    )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if message.text == "تأكيد":
         # Gathering Payment Information
@@ -808,14 +738,7 @@ def send_product2(message):
         admin_cp1(message)
 #-------------------
 def send_product3(message):
-    con = psycopg2.connect(  # Start Database Connection
-
-        host = DB_HOST,
-        database = DB_NAME,
-        user = DB_USERN,
-        password = DB_PASS,
-        port = 5432
-    )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         order_id = message.text
@@ -867,14 +790,7 @@ def send_product3(message):
     con.close()
 #-------------------
 def send_product4(message, order_id):
-    con = psycopg2.connect(  # Start Database Connection
-
-        host = DB_HOST,
-        database = DB_NAME,
-        user = DB_USERN,
-        password = DB_PASS,
-        port = 5432
-    )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if message.text == "تأكيد":
         
@@ -975,13 +891,7 @@ def send_product_new1(message):
     bot.register_next_step_handler(username_ask, send_product_new2)
 
 def send_product_new2(message):
-    con = psycopg2.connect(  # Start Database Connection
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "/AdminCP") & (message.text != "إلغاء ❌"):
         username = message.text
@@ -1008,13 +918,7 @@ def send_product_new2(message):
     con.close()  
 
 def send_product_new3(message, username):
-    con = psycopg2.connect(  # Start Database Connection
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     select_script =  """SELECT * FROM price_list where product_name = %s"""
     product_ans = message.text
@@ -1105,14 +1009,7 @@ def send_product_new5(message, price, product, product_ans, username):
         admin_cp1(message)  
 
 def send_product_new6(message, price, qnt, product, order_id, username):
-    con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-            )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     # Dir Names:
     if product == "Account":
@@ -1257,14 +1154,7 @@ def send_message2(message):
         admin_cp1(message)
 #----------------
 def send_message3(message, type_ans):
-    con = psycopg2.connect(
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "إلغاء ❌") & (message.text != "/AdminCP"):
         username_ans = message.text
@@ -1316,14 +1206,7 @@ def send_message4(message, type_ans, username_ans):
         admin_cp1(message)
 #----------------
 def send_message5(message, message_ans, username_ans, type_ans):
-    con = psycopg2.connect(
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     check_ans = message.text
     if check_ans == "تأكيد":    
@@ -1379,14 +1262,7 @@ def payments_report1(message):
     bot.register_next_step_handler(period_ask, payments_report2)
 #------------------
 def payments_report2(message):
-    con = psycopg2.connect(
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if message.text != "/AdminCP":
         period = message.text
@@ -1432,14 +1308,7 @@ def orders_report1(message):
     bot.register_next_step_handler(period_ask, orders_report2)
 #------------------
 def orders_report2(message):
-    con = psycopg2.connect(
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if message.text != "/AdminCP":
         period = message.text
@@ -1485,14 +1354,7 @@ def client_report1(message):
     bot.register_next_step_handler(client_ask, client_report2)
 
 def client_report2(message):
-    con = psycopg2.connect(
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+    con = psycopg2.connect(DATABASE_URL)
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     if (message.text != "إلغاء ❌") & (message.text != "/AdminCP"):
         username = message.text
@@ -1605,14 +1467,7 @@ def start(message):
         user_id = (username[1:3]) + str(int(time.time())) + (username[-3:-1])
         #----------------------
         # Start Database Connection
-        con = psycopg2.connect(
-
-                host = DB_HOST,
-                database = DB_NAME,
-                user = DB_USERN,
-                password = DB_PASS,
-                port = 5432
-            )
+        con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         #-----------------
         # Store user data into Database
@@ -1678,14 +1533,7 @@ def rep_MainKB(message):
             get_trancid_1(message)
     #---------------------------
     def get_trancid_1(message):
-        con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+        con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         select_script =  """SELECT * FROM price_list where product_name = %s"""
         method_ans = message.text
@@ -1729,14 +1577,7 @@ def rep_MainKB(message):
             payment_id = type[0:2] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
             msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
             list.append((payment_id, username, message.text, type , "no", msg_dt, "pending", price))
-            con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-            )
+            con = psycopg2.connect(DATABASE_URL)
             cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
             for d in list:
                 script_insert = "INSERT into received_payments (id, source, code, type, taken, receive_dt, status, price) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
@@ -1778,14 +1619,7 @@ def rep_MainKB(message):
     #---------------------------
     # visa_M & Visa NonM & Yobit Code
     def get_codes_1(message):
-        con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+        con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         select_script =  """SELECT * FROM price_list where product_name = %s"""
         method_ans = message.text
@@ -1866,14 +1700,7 @@ def rep_MainKB(message):
             first_name = message.chat.first_name
             #------------------------
             # Insert Data Into Database
-            con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-            )
+            con = psycopg2.connect(DATABASE_URL)
             cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
             for d in list:
                 script_insert = "INSERT into received_payments (id, source, code, type, taken, receive_dt, status, price) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
@@ -1959,14 +1786,7 @@ def rep_MainKB(message):
             "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
         
     def get_photo_4(message, img,):
-        con = psycopg2.connect(  # Start Database Connection
-
-        host = DB_HOST,
-        database = DB_NAME,
-        user = DB_USERN,
-        password = DB_PASS,
-        port = 5432
-        )
+        con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         if message.text == "تأكيد":
             # Gathering Information
@@ -2013,13 +1833,7 @@ def rep_MainKB(message):
         bot.register_next_step_handler(product_ask, request_product_1)
     #---------------------------
     def request_product_1(message):
-        con = psycopg2.connect(  # Start Database Connection
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+        con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         select_script =  """SELECT * FROM price_list where product_name = %s"""
         product_ans = message.text
@@ -2113,14 +1927,7 @@ def rep_MainKB(message):
         bot.register_next_step_handler(order_check, request_product_4, price, qnt, product, order_id)
     #---------------------------
     def request_product_4(message, price, qnt, product, order_id):
-        con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-            )
+        con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         # Dir Names:
         if product == "Account":
@@ -2289,14 +2096,7 @@ def rep_MainKB(message):
     def price_list2(message):
         text = ""
         list_ans = message.text 
-        con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+        con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         if list_ans == "أسعار رصيد البوت":
             select_script =  """SELECT * FROM price_list
@@ -2312,6 +2112,7 @@ def rep_MainKB(message):
                 product_name = record["product_name"]
                 price = str((record['price']))
                 text = text + "\n كل 1$ من: " + product_name + "\n يعادل: " + price + " SP\n--------"
+            bot.send_message(message.chat.id, text, reply_markup=returnToMainKB)
         elif list_ans == "أسعار منتجاتنا":
             select_script =  """SELECT * FROM price_list
                                 where
@@ -2323,7 +2124,10 @@ def rep_MainKB(message):
                 product_name = record["product_name"]
                 price = str((record['price']))
                 text = text + "\n اسم المنتج: " + product_name + "\n السعر: " + price + " SP\n--------"
-        bot.send_message(message.chat.id, text, reply_markup=returnToMainKB)    
+            bot.send_message(message.chat.id, text, reply_markup=returnToMainKB)
+        elif list_ans == "القائمة الرئيسية":
+            bot.send_message(message.chat.id, "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
+            
         #bot.send_message(message.chat.id, list_str, reply_markup=returnToMainKB)
         
         #bot.send_message(message.chat.id, price_list, reply_markup=returnToMainKB)
@@ -2336,14 +2140,7 @@ def rep_MainKB(message):
 # # معرفة رصيدي      
     def my_balance(message):
         username = "@" + message.from_user.username
-        con = psycopg2.connect(  # Start Database Connection
-
-            host = DB_HOST,
-            database = DB_NAME,
-            user = DB_USERN,
-            password = DB_PASS,
-            port = 5432
-        )
+        con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         select_script =  'SELECT * FROM clients WHERE username = %s'
         select_value = (username,)
