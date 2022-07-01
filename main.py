@@ -56,7 +56,7 @@ cur.execute(prices_script)
 orders_script = ''' CREATE TABLE IF NOT EXISTS product_orders (
                         id      VARCHAR PRIMARY KEY,
                         client_username    VARCHAR,
-                        quantinty    INT,
+                        quantity    INT,
                         price    INT,
                         status    VARCHAR,
                         delivered    VARCHAR,
@@ -2004,7 +2004,7 @@ def rep_MainKB(message):
                 first_name = message.chat.first_name
                 # Inserting Order in the database
                 for d in list:
-                        script_insert = "INSERT into product_orders (id, client_username, product_name, quantinty, price, status, order_dt, delivered) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                        script_insert = "INSERT into product_orders (id, client_username, product_name, quantity, price, status, order_dt, delivered) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
                         script_value = d
                         cur.execute(script_insert, script_value)
                 #----------------------------
@@ -2087,7 +2087,7 @@ def rep_MainKB(message):
                         username = record["client_username"]
                         product = record["product_name"]
                         price = str(record["price"])
-                        qnt = str(record["quantinty"])
+                        qnt = str(record["quantity"])
                         total_price = int(price)*int(qnt)
                         order_dt = record["order_dt"]
                         status = record["status"]
