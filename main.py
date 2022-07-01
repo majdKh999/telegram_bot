@@ -1981,7 +1981,7 @@ def rep_MainKB(message):
             sold_dir = product_dir + "_sold"
             available_products = len(os.listdir(product_dir))
         elif product == "Account+SSN":
-            product_dir = "C:/Users/mjkha/Desktop/Personal/Programming Projects/bablyon/telegram_bot/products/account+ssn"
+            product_dir = "products/account+ssn"
             sold_dir = product_dir + "_sold"
             available_products = len(os.listdir(product_dir))
         elif product == "SSN":
