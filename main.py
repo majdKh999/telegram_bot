@@ -45,12 +45,14 @@ clients_script = ''' CREATE TABLE IF NOT EXISTS clients (
                         balance    INT,
                         join_dt    TIMESTAMP,
                         first_name    VARCHAR)'''
+cur.execute(clients_script)
 prices_script = ''' CREATE TABLE IF NOT EXISTS price_list (
                         id      INT,
                         product_name    VARCHAR PRIMARY KEY,
                         price    INT,
                         editor    VARCHAR,
                         last_update_dt    TIMESTAMP)'''
+cur.execute(prices_script)
 orders_script = ''' CREATE TABLE IF NOT EXISTS product_orders (
                         id      VARCHAR PRIMARY KEY,
                         client_username    VARCHAR,
@@ -61,6 +63,7 @@ orders_script = ''' CREATE TABLE IF NOT EXISTS product_orders (
                         product_name    VARCHAR,
                         order_dt    TIMESTAMP,
                         deliver_dt    TIMESTAMP)'''
+cur.execute(orders_script)
 payments_script = ''' CREATE TABLE IF NOT EXISTS received_payments (
                         id      VARCHAR PRIMARY KEY,
                         source    VARCHAR,
@@ -72,8 +75,7 @@ payments_script = ''' CREATE TABLE IF NOT EXISTS received_payments (
                         value    INT,
                         receive_dt    TIMESTAMP,
                         check_dt    TIMESTAMP)'''
-cur.execute(clients_script, prices_script)
-cur.execute(orders_script, payments_script)
+cur.execute(payments_script)
 
 script_insert = "INSERT into price_list (id, product_name, price) VALUES (%s, %s, %s)"
 cur.execute(script_insert, (1, "MTN Cash", 1))
