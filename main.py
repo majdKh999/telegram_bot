@@ -75,6 +75,18 @@ payments_script = ''' CREATE TABLE IF NOT EXISTS received_payments (
 cur.execute(clients_script, prices_script)
 cur.execute(orders_script, payments_script)
 
+script_insert = "INSERT into price_list (id, product_name, price) VALUES (%s, %s, %s)"
+cur.execute(script_insert, (1, "MTN Cash"))
+cur.execute(script_insert, (2, "Payeer"))
+cur.execute(script_insert, (3, "SSN"))
+cur.execute(script_insert, (4, "Syriatel Cash"))
+cur.execute(script_insert, (5, "Visa Token \"تدمج\""))
+cur.execute(script_insert, (6, "Visa Token \"لا تدمج\""))
+cur.execute(script_insert, (7, "Yobit Code"))
+cur.execute(script_insert, (8, "تحضير حساب حقيقي"))
+cur.execute(script_insert, (9, "تحضير حساب حقيقي مع SSN"))
+cur.execute(script_insert, (10, "حوالة مالية (هرم)"))
+
 con.commit()
 cur.close()
 con.close()
