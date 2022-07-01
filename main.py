@@ -77,17 +77,17 @@ payments_script = ''' CREATE TABLE IF NOT EXISTS received_payments (
                         check_dt    TIMESTAMP)'''
 cur.execute(payments_script)
 
-script_insert = "INSERT into price_list (id, product_name, price) VALUES (%s, %s, %s)"
-cur.execute(script_insert, (1, "MTN Cash", 1))
-cur.execute(script_insert, (2, "Payeer", 3300))
-cur.execute(script_insert, (3, "SSN", 1900))
-cur.execute(script_insert, (4, "Syriatel Cash", 1))
-cur.execute(script_insert, (5, "Visa Token \"تدمج\"", 3300))
-cur.execute(script_insert, (6, "Visa Token \"لا تدمج\"", 3000))
-cur.execute(script_insert, (7, "Yobit Code", 3400))
-cur.execute(script_insert, (8, "تحضير حساب حقيقي", 1000))
-cur.execute(script_insert, (9, "تحضير حساب حقيقي مع SSN", 3000))
-cur.execute(script_insert, (10, "حوالة مالية (هرم)", 1))
+#script_insert = "INSERT into price_list (id, product_name, price) VALUES (%s, %s, %s)"
+#cur.execute(script_insert, (1, "MTN Cash", 1))
+#cur.execute(script_insert, (2, "Payeer", 3300))
+#cur.execute(script_insert, (3, "SSN", 1900))
+#cur.execute(script_insert, (4, "Syriatel Cash", 1))
+#cur.execute(script_insert, (5, "Visa Token \"تدمج\"", 3300))
+#cur.execute(script_insert, (6, "Visa Token \"لا تدمج\"", 3000))
+#cur.execute(script_insert, (7, "Yobit Code", 3400))
+#cur.execute(script_insert, (8, "تحضير حساب حقيقي", 1000))
+#cur.execute(script_insert, (9, "تحضير حساب حقيقي مع SSN", 3000))
+#cur.execute(script_insert, (10, "حوالة مالية (هرم)", 1))
 
 con.commit()
 cur.close()
