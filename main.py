@@ -17,35 +17,67 @@ bot = telebot.TeleBot(BOT_TOKEN)
 #app = web.Application()
 admin_ids = [301284229, 1023605829, 295651970]
 
-
 DB_HOST = config('DB_HOST')
 DB_NAME = config('DB_NAME')
 DB_USERN = config('DB_USERN')
 DB_PASS = config('DB_PASS')
 DATABASE_URL = config('DATABASE_URL')
-
-
-
-#logger = telebot.logger
-#telebot.logger.setLevel(logging.INFO)
-
-
-
 MODE = config('MODE')
+
 if MODE == "dev":
     def run():
        # logger.info("Start in DEV MODE")
         bot.infinity_polling()
-
-
-
 elif MODE == "prod":
     def run():
-       # logger.info("Start in DEV MODE")
         bot.infinity_polling()
 else:
     #logger.error("No mode specified")
     sys.exit()
+#-------------------------------------------------
+
+con = psycopg2.connect(DATABASE_URL)
+cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
+clients_script = ''' CREATE TABLE IF NOT EXISTS clients (
+                        id      VARCHAR PRIMARY KEY,
+                        username    VARCHAR,
+                        tele_id    INT,
+                        balance    INT,
+                        join_dt    TIMESTAMP,
+                        first_name    VARCHAR)'''
+prices_script = ''' CREATE TABLE IF NOT EXISTS price_list (
+                        id      INT,
+                        product_name    VARCHAR PRIMARY KEY,
+                        price    INT,
+                        editor    VARCHAR,
+                        last_update_dt    TIMESTAMP)'''
+orders_script = ''' CREATE TABLE IF NOT EXISTS product_orders (
+                        id      VARCHAR PRIMARY KEY,
+                        client_username    VARCHAR,
+                        quantinty    INT,
+                        price    INT,
+                        status    VARCHAR,
+                        delivered    VARCHAR,
+                        product_name    VARCHAR,
+                        order_dt    TIMESTAMP,
+                        deliver_dt    TIMESTAMP)'''
+payments_script = ''' CREATE TABLE IF NOT EXISTS received_payments (
+                        id      VARCHAR PRIMARY KEY,
+                        source    VARCHAR,
+                        code    VARCHAR,
+                        type    VARCHAR,
+                        status    VARCHAR,
+                        taken    VARCHAR,
+                        price    INT,
+                        value    INT,
+                        receive_dt    TIMESTAMP,
+                        check_dt    TIMESTAMP)'''
+cur.execute(clients_script, prices_script)
+cur.execute(orders_script, payments_script)
+
+con.commit()
+cur.close()
+con.close()
 #-------------------------------------------------
 list = []
 
