@@ -15,7 +15,11 @@ from aiohttp import web
 BOT_TOKEN = config('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
 #app = web.Application()
-admin_ids = [301284229, 1023605829, 295651970]
+admin_ids = [301284229]
+payments_chat_id = -632123025
+orders_chat_id = -792549524
+reports_chat_id = -773223479
+
 
 DB_HOST = config('DB_HOST')
 DB_NAME = config('DB_NAME')
@@ -23,6 +27,13 @@ DB_USERN = config('DB_USERN')
 DB_PASS = config('DB_PASS')
 DATABASE_URL = config('DATABASE_URL')
 MODE = config('MODE')
+
+product1_dir = config('product1_dir')
+product2_dir = config('product2_dir')
+product3_dir = config('product3_dir')
+
+
+
 
 if MODE == "dev":
     def run():
@@ -77,23 +88,13 @@ payments_script = ''' CREATE TABLE IF NOT EXISTS received_payments (
                         check_dt    TIMESTAMP)'''
 cur.execute(payments_script)
 
-#script_insert = "INSERT into price_list (id, product_name, price) VALUES (%s, %s, %s)"
-#cur.execute(script_insert, (1, "MTN Cash", 1))
-#cur.execute(script_insert, (2, "Payeer", 3300))
-#cur.execute(script_insert, (3, "SSN", 1900))
-#cur.execute(script_insert, (4, "Syriatel Cash", 1))
-#cur.execute(script_insert, (5, "Visa Token \"تدمج\"", 3300))
-#cur.execute(script_insert, (6, "Visa Token \"لا تدمج\"", 3000))
-#cur.execute(script_insert, (7, "Yobit Code", 3400))
-#cur.execute(script_insert, (8, "تحضير حساب حقيقي", 1000))
-#cur.execute(script_insert, (9, "تحضير حساب حقيقي مع SSN", 3000))
-#cur.execute(script_insert, (10, "حوالة مالية (هرم)", 1))
 
 con.commit()
 cur.close()
 con.close()
 #-------------------------------------------------
 list = []
+
 
 
 returnToMainBTN = types.KeyboardButton("القائمة الرئيسية")
@@ -143,19 +144,14 @@ syriatelBTN = types.KeyboardButton("Syriatel Cash")
 mtnBTN = types.KeyboardButton("MTN Cash")
 haramBTN = types.KeyboardButton("حوالة مالية (هرم)")
 otherBTN = types.KeyboardButton("other")
-payKB.add(visa_1BTN, visa_2BTN, payeerBTN, yobitBTN, syriatelBTN, mtnBTN, haramBTN, otherBTN, returnToMainBTN)
+payKB.add(visa_1BTN, visa_2BTN, payeerBTN, yobitBTN, haramBTN, returnToMainBTN)
 # ---------------------------------
 # Visa Token Mergable - Pay Menu 
-visatoken_1KB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
+check_codeKB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
 confirm_BTN = types.KeyboardButton("تأكيد")
 cancel_BTN = types.KeyboardButton("إلغاء ❌")
-visatoken_1KB.add(confirm_BTN, cancel_BTN, returnToMainBTN)
-# ---------------------------------
-# Yobit Code - Pay Menu 
-yobitKB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
-confirm_BTN = types.KeyboardButton("تأكيد")
-yobitKB.add(confirm_BTN, cancel_BTN, returnToMainBTN)
-# ---------------------------------
+check_codeKB.add(confirm_BTN, cancel_BTN, returnToMainBTN)
+
 # Haram - Pay Menu
 haramKB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
 send_photoBTN = types.KeyboardButton("إرسال صورة وصل")
@@ -188,7 +184,10 @@ price_listKB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
 blc_priceBTN = types.KeyboardButton("أسعار رصيد البوت")
 product_priceBTN = types.KeyboardButton("أسعار منتجاتنا")
 price_listKB.add(blc_priceBTN, product_priceBTN, returnToMainBTN)
-
+# -------------------------------------------------------
+# -------------------------------------------------------
+# -------------------------------------------------------
+# ---------------------------------
 
 
 
@@ -275,6 +274,10 @@ single_messageBTN = types.KeyboardButton("رسالة فردية")
 group_messageBTN = types.KeyboardButton("رسالة جماعية")
 send_message1KB.add(single_messageBTN, group_messageBTN, cancel_BTN, admincp_BTN)
 # ---------------------------------
+send_message3KB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
+all_clientsBTN = types.KeyboardButton("تحديد جميع العملاء")
+send_message3KB.add(all_clientsBTN, cancel_BTN, admincp_BTN)
+# ---------------------------------
 # Admin Control Panel - Send Message - Confirm
 check_messageKB = types.ReplyKeyboardMarkup(resize_keyboard= True, row_width=2)
 check_messageKB.add(confirm_BTN, cancel_BTN, admincp_BTN)
@@ -301,8 +304,6 @@ def admin_cp1(message):
     elif message.chat.id not in admin_ids:
         bot.send_message(message.chat.id,
         "بعتذر منك، ماعندك الصلاحية لتدخل هاي القائمة 🙂")
-
-
 #-------------------
 def admin_cp2(message):
     if message.text == "إضافة رصيد ⬆️":
@@ -738,6 +739,13 @@ def verify_payment4(message, payment_id, code_value):
         "\n وإضافة *{:,}* SP إلى رصيد *{}* بنجاح !".format(balance_add, username) +
         "\n الرصيد السابق: *{:,}* SP".format(int(old_balance)) +
         "\n الرصيد الحالي: *{:,}* SP".format(int(new_balance)), parse_mode="Markdown", reply_markup=only_cpKB)
+        bot.send_message(payments_chat_id, # For Admin
+        "تم تأكيد الدفعة الخاصة بـ *{}*".format(username) +
+        "\n Payment ID: `{}`".format(payment_id) +
+        "\n من نوع  *{}*".format(type)  +
+        "\n وإضافة *{:,}* SP إلى رصيد *{}* بنجاح !".format(balance_add, username) +
+        "\n الرصيد السابق: *{:,}* SP".format(int(old_balance)) +
+        "\n الرصيد الحالي: *{:,}* SP".format(int(new_balance)), parse_mode="Markdown", reply_markup=only_cpKB)
         bot.send_message(user_id, # For Client
         "تم تأكيد الدفعة الخاصة بك " +
         "\nوإضافة *{:,}* SP إلى رصيدك بنجاح !".format(balance_add) + 
@@ -861,15 +869,15 @@ def send_product4(message, order_id):
         #--------------------------------
         # Dir Names
         if product == "Account":
-            product_dir = "C:/Users/mjkha/Desktop/Personal/Programming Projects/bablyon/telegram_bot/products/account"
+            product_dir = product1_dir
             sold_dir = product_dir + "_sold"
             available_products = len(os.listdir(product_dir))
         elif product == "Account+SSN":
-            product_dir = "C:/Users/mjkha/Desktop/Personal/Programming Projects/bablyon/telegram_bot/products/account+ssn"
+            product_dir = product2_dir
             sold_dir = product_dir + "_sold"
             available_products = len(os.listdir(product_dir))
         elif product == "SSN":
-            product_dir = "C:/Users/mjkha/Desktop/Personal/Programming Projects/bablyon/telegram_bot/products/ssn"
+            product_dir = product3_dir
             sold_dir = product_dir + "_sold"
             available_products = len(os.listdir(product_dir))
         if available_products >= qnt: #  Enough Products => Sending Imediatly
@@ -895,20 +903,29 @@ def send_product4(message, order_id):
                             delivered = %s,
                             deliver_dt = %s
                             WHERE id = %s"""
-            update_value = (True, deliver_dt, order_id)
+            update_value = ("yes", deliver_dt, order_id)
             cur.execute(update_script, update_value)
                 #-----------------------
             # Success Message - Admin        
-            for id in admin_ids:
-                bot.send_message(id, "تم إرسال المنتج بنجاح !"
-                + "\n Order ID: `{}`".format(order_id)
-                + "\n اسم المنتج: *{}*".format(product)
-                + "\n سعر المبيع: *{:,}*".format(price) + " SP"
-                + "\n السعر الإجمالي: *{:,}*".format(total_price) + " SP"
-                + "\n اسم المستخدم: *{}*".format(username)
-                + "\n تاريخ الطلب: *{}*".format(order_dt)
-                + "\n الحالة: *{}*".format(status)
-                + "\n تم التسليم: *{}*".format(delivered), reply_markup=only_cpKB, parse_mode="Markdown")
+            
+            bot.send_message(message.chat.id, "تم إرسال المنتج بنجاح !"
+            + "\n Order ID: `{}`".format(order_id)
+            + "\n اسم المنتج: *{}*".format(product)
+            + "\n سعر المبيع: *{:,}*".format(price) + " SP"
+            + "\n السعر الإجمالي: *{:,}*".format(total_price) + " SP"
+            + "\n اسم المستخدم: *{}*".format(username)
+            + "\n تاريخ الطلب: *{}*".format(order_dt)
+            + "\n الحالة: *{}*".format(status)
+            + "\n تم التسليم: *{}*".format(delivered), reply_markup=only_cpKB, parse_mode="Markdown")
+            bot.send_message(orders_chat_id, "تم إرسال المنتج بنجاح !"
+            + "\n Order ID: `{}`".format(order_id)
+            + "\n اسم المنتج: *{}*".format(product)
+            + "\n سعر المبيع: *{:,}*".format(price) + " SP"
+            + "\n السعر الإجمالي: *{:,}*".format(total_price) + " SP"
+            + "\n اسم المستخدم: *{}*".format(username)
+            + "\n تاريخ الطلب: *{}*".format(order_dt)
+            + "\n الحالة: *{}*".format(status)
+            + "\n تم التسليم: *{}*".format(delivered), reply_markup=only_cpKB, parse_mode="Markdown")
             
             
             #--------------------------
@@ -1059,15 +1076,15 @@ def send_product_new6(message, price, qnt, product, order_id, username):
     cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
     # Dir Names:
     if product == "Account":
-        product_dir = "C:/Users/mjkha/Desktop/Personal/Programming Projects/bablyon/telegram_bot/products/account"
+        product_dir = product1_dir
         sold_dir = product_dir + "_sold"
         available_products = len(os.listdir(product_dir))
     elif product == "Account+SSN":
-        product_dir = "C:/Users/mjkha/Desktop/Personal/Programming Projects/bablyon/telegram_bot/products/account+ssn"
+        product_dir = product2_dir
         sold_dir = product_dir + "_sold"
         available_products = len(os.listdir(product_dir))
     elif product == "SSN":
-        product_dir = "C:/Users/mjkha/Desktop/Personal/Programming Projects/bablyon/telegram_bot/products/ssn"
+        product_dir = product3_dir
         sold_dir = product_dir + "_sold"
         available_products = len(os.listdir(product_dir))
     #-------------------------------
@@ -1142,18 +1159,29 @@ def send_product_new6(message, price, qnt, product, order_id, username):
                 bot.send_message(tele_id,
                 "رصيدك السابق: " + old_balance +" SP\nرصيدك الحالي: " + new_balance + " SP")
                 #--------------------------
-                for id in admin_ids:
-                    bot.send_message(id, "طلب شراء منتج جديد من قبل " + message.from_user.username
-                    + "\n Order ID: `{}`".format(order_id)
-                    + "\n اسم المنتج: *{}*".format(product)
-                    + "\n سعر المبيع: *{:,}*".format(int(price)) + " SP"
-                    + "\n السعر الإجمالي: *{:,}*".format(int(total_price)) + " SP"
-                    #+ "\n الاسم الأول: *{}*".format(first_name)
-                    + "\n اسم المستخدم: *{}*".format(username)
-                    + "\n تاريخ الطلب: *{}*".format(order_dt)
-                    + "\n الحالة: *{}*".format(status)
-                    + "\n تم التسليم: *{}*".format(delivered), parse_mode="Markdown")
-                    
+                
+                bot.send_message(message.chat.id, "طلب شراء منتج جديد من قبل " + message.from_user.username
+                + "\n Order ID: `{}`".format(order_id)
+                + "\n اسم المنتج: *{}*".format(product)
+                + "\n سعر المبيع: *{:,}*".format(int(price)) + " SP"
+                + "\n السعر الإجمالي: *{:,}*".format(int(total_price)) + " SP"
+                #+ "\n الاسم الأول: *{}*".format(first_name)
+                + "\n اسم المستخدم: *{}*".format(username)
+                + "\n تاريخ الطلب: *{}*".format(order_dt)
+                + "\n الحالة: *{}*".format(status)
+                + "\n تم التسليم: *{}*".format(delivered), parse_mode="Markdown")
+                
+                bot.send_message(orders_chat_id, "طلب شراء منتج جديد من قبل " + message.from_user.username
+                + "\n Order ID: `{}`".format(order_id)
+                + "\n اسم المنتج: *{}*".format(product)
+                + "\n سعر المبيع: *{:,}*".format(int(price)) + " SP"
+                + "\n السعر الإجمالي: *{:,}*".format(int(total_price)) + " SP"
+                #+ "\n الاسم الأول: *{}*".format(first_name)
+                + "\n اسم المستخدم: *{}*".format(username)
+                + "\n تاريخ الطلب: *{}*".format(order_dt)
+                + "\n الحالة: *{}*".format(status)
+                + "\n تم التسليم: *{}*".format(delivered), parse_mode="Markdown")
+                
             elif available_products < int(qnt): # No Enough Products => Recording Order
                 bot.send_message(message.chat.id,
                 "عذراً، لا يوجد عدد كافي من المنتجات التي طلبتها", reply_markup=only_cpKB)
@@ -1529,7 +1557,10 @@ def start(message):
             print("user already exists")
             
         # Welcome Message
-        bot.send_message(message.chat.id, "أهلاً بك في البوت الخاص بنا " + first_name + "\n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
+        bot.send_message(message.chat.id,
+        "ها قد بدأت رحلتك في أرض الكنوز *{}*".format("\"بابل\"")
+        + "\nاختر ما شئت من خدماتنا ... "
+        , reply_markup = mainKB, parse_mode="Markdown")
         #-----------------
         # Commit & End Database Connection
         con.commit()
@@ -1537,27 +1568,13 @@ def start(message):
         con.close()
     elif (message.from_user.username) is None:
         first_name = message.chat.first_name
-        bot.send_message(message.chat.id, "أهلاً بك في البوت الخاص بنا " + first_name + " !\n" +
-        "نأسف لحدوث هذا الخطأ،" + 
-         "\n من فضلك قم بإضافة اسم مستخدم (username)" + 
-         "\n إلى حسابك على تيليجرام حتى تستطيع استخدام البوت بدون أي مشاكل.")
-# -----------------------------------------------------------------
-# -----------------------------------------------------------------
-# -----------------------------------------------------------------
+        bot.send_message(message.chat.id, "أهلاً بك في البوت الخاص بنا *{}* !".format(first_name) + 
+        "\nنأسف لحدوث هذا الخطأ،" + 
+        "\n من فضلك قم بإضافة اسم مستخدم (username)" + 
+        "\n إلى حسابك على Telegram" + 
+        "\n ثم اضغط زر /start مجدداً", parse_mode="Markdown")
+#---------------------------------------------- 
 
-
-
-
-
-@bot.message_handler(commands=['test'])
-def test(message):
-    # Start Database Connection
-    send_message1(message)
-
-
-#------------------------------------------------------------------
-#------------------------------------------------------------------
-#------------------------------------------------------------------
 # Handling ReplyKeyboard Messages
 @bot.message_handler(content_types=['text'])
 def rep_MainKB(message):
@@ -1575,51 +1592,42 @@ def rep_MainKB(message):
         elif message.text == "حوالة مالية (هرم)":
             get_photo_1(message)
         #---------------------------
-        elif (message.text == "Syriatel Cash") | (message.text == "MTN Cash") | (message.text == "Payeer"):
+        elif message.text == "Payeer":
             get_trancid_1(message)
+        #---------------------------
+        elif message.text == "القائمة الرئيسية":
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        #---------------------------
+        elif message.text == "/start":
+            list.clear()
+            start(message)
+        #---------------------------
+        else:
+            method_ask = bot.send_message(message.chat.id, "ما قدرت أفهم عليك 😕"
+            + "\n اكبس على زر من الأزرار اللي تحت 👇🏻😁", reply_markup = payKB)
+            bot.register_next_step_handler(method_ask, get_method_step2)
     #---------------------------
     def get_trancid_1(message):
+        type = message.text
         con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         select_script =  """SELECT * FROM price_list where product_name = %s"""
-        method_ans = message.text
-        if method_ans == "Syriatel Cash":
-            cur.execute(select_script, (method_ans, ))
-            for record in cur.fetchall():
-                price = str(record["price"])
-            type = "Syriatel Cash"
-            ask_text = ("كل 1 ليرة سورية من رصيد Syriatel Cash"+
-            "\n تعادل " + price + " SP من رصيد البوت"+
-            "\n من فضلك قم بإرسال المبلغ عن طريق التحويل اليدوي"+
-            "\n إلى حساب التاجر التالي: 23274248" + 
-            "\n ثم قم بإرسال رقم عملية التحويل هنا" )
-        elif method_ans == "MTN Cash":
-            cur.execute(select_script, (method_ans, ))
-            for record in cur.fetchall():
-                price = str(record["price"])
-            type = "MTN Cash"
-            ask_text = ("كل 1 ليرة سورية من رصيد MTN Cash"+
-            "\n تعادل " + price + " SP من رصيد البوت"+
-            "\n من فضلك قم بإرسال المبلغ عن طريق التحويل اليدوي"+
-            "\n إلى حساب التاجر التالي: 23274248" + 
-            "\n ثم قم بإرسال رقم عملية التحويل هنا" )
-        elif method_ans == "Payeer":
-            cur.execute(select_script, (method_ans, ))
-            for record in cur.fetchall():
-                price = str(record["price"])
-            type = "Payeer"
-            ask_text = ( "نقبل الدفع بعملة USD فقط"
-            "\n كل 1 USD من رصيد Payeer"+
-            "\n تعادل " + price + " SP من رصيد البوت"+
-            "\n من فضلك قم بإرسال المبلغ إلى الحساب التالي: P1028248226" + 
-            "\n ثم قم بإرسال رقم عملية التحويل هنا" )
-        trancid_ask = bot.send_message(message.chat.id, ask_text, reply_markup = send_message2KB)
+        cur.execute(select_script, (type, ))
+        for record in cur.fetchall():
+            price = record["price"]
+        trancid_ask = bot.send_message(message.chat.id,
+        "نقبل الدفع بعملة USD فقط"
+        "\n كل 1$ من رصيد Payeer" +
+        "\n تعادل *{:,}* SP من رصيد البوت".format(price) +
+        "\n من فضلك قم بإرسال المبلغ إلى الحساب التالي: `{}`".format("P1028248226") + 
+        "\n ثم قم بإرسال رقم عملية التحويل هنا", parse_mode="Markdown", reply_markup = check3KB)
         bot.register_next_step_handler(trancid_ask, get_trancid_2, price, type)
         
     def get_trancid_2(message, price, type):
+        first_name = message.chat.first_name
         username = ("@" + message.from_user.username)
         #---------------------
-        if ((message.text != "إلغاء ❌") & (message.text != "القائمة الرئيسية")):
+        if ((message.text != "إلغاء ❌") & (message.text != "القائمة الرئيسية") & (message.text != "/start")):
             payment_id = type[0:2] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
             msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
             list.append((payment_id, username, message.text, type , "no", msg_dt, "pending", price))
@@ -1631,20 +1639,17 @@ def rep_MainKB(message):
                 cur.execute(script_insert, script_value)
             #------------------------
             # Sending Payments to Admins
-            for id in admin_ids:
-                bot.send_message(id,
-                "تم استقبال دفعة جديدة !"
-                + "\n Payment_ID: " + payment_id
-                + "\n Type: " + type
-                + "\n Price: " + str(price) + " SP"
-                + "\n First Name: " 
-                + "\n Username: " + username
-                + "\n Date: " + str(msg_dt)
-                + "\n Status: " + "pending"
-                + "\n----------------"
-                + "\n Payment Code: " + message.text
-                + "\n Payment ID will be sent Again seperatly")
-                bot.send_message(id, payment_id)
+            bot.send_message(payments_chat_id,
+            "تم استقبال دفعة جديدة !"
+            + "\n Payment ID: `{}`".format(payment_id)
+            + "\n النوع: *{}*".format(type)
+            + "\n سعر المبيع: *{:,}*".format(price) + " SP"
+            + "\n اسم العميل: *{}*".format(first_name) 
+            + "\n اسم المستخدم: *{}*".format(username)
+            + "\n تاريخ الاستلام: *{}*".format(msg_dt)
+            + "\n الحالة: *{}*".format("pending")
+            + "\n----------------"
+            + "\n رقم عملية التحويل: `{}`".format(message.text), parse_mode="Markdown")
             #-----------------------
             # Success Message
             bot.send_message(message.chat.id, text =
@@ -1656,12 +1661,15 @@ def rep_MainKB(message):
         elif message.text == "إلغاء ❌":
             list.clear()
             # UnSuccess Message
-            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=payKB)
-            get_method_step1(message)
+            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=mainKB)
+        #-----------------------
         elif message.text == "القائمة الرئيسية":
             list.clear()
-            bot.send_message(message.chat.id,
-            "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        #-----------------------
+        elif message.text == "/start":
+            list.clear()
+            start(message)
     #---------------------------
     # visa_M & Visa NonM & Yobit Code
     def get_codes_1(message):
@@ -1672,48 +1680,45 @@ def rep_MainKB(message):
         if method_ans == "Yobit Code":
             cur.execute(select_script, (method_ans, ))
             for record in cur.fetchall():
-                price = str(record["price"])
+                price = record["price"]
             type = "YobitCode"
-            ask_text = ("كل 1$ يعادل " + str(price) +  " SP"+
+            ask_text = ("كل 1$ يعادل *{:,}*".format(price) +  " SP" +
             "\nنستقبل الأكواد من عملة USD فقط"+
             "\nيرجى إرسال كل كود برسالة منفصلة بالشكل التالي:"+
             "\nYOBITFR6LC8X3Q764YQGR4FY6NQVXKBTJQGRMUSD"+
             "\nبعد الانتهاء من إرسال الأكواد يرجى الضغط على زر \"تأكيد\""+
             "\n ملاحظة: بعد الضغط على زر تأكيد لا يمكن التراجع عن هذه الخطوة")
-            markup = yobitKB
 
         elif method_ans == "Visa Token \"تدمج\"":
             cur.execute(select_script, (method_ans, ))
             for record in cur.fetchall():
-                price = str(record["price"])
+                price = record["price"]
             type = "Visa_M"
-            ask_text = ("كل 1$ يعادل " + str(price) + " SP"+
+            ask_text = ("كل 1$ يعادل *{:,}*".format(price) +  " SP" +
             "\nيرجى إرسال كل بطاقة برسالة منفصلة بالشكل التالي:"+
             "\nXXXX-XXXXXX-XXXX"+
             "\nبعد الانتهاء من إرسال بطاقات يرجى الضغط على زر \"تأكيد\""+
             "\n ملاحظة: بعد الضغط على زر تأكيد لا يمكن التراجع عن هذه الخطوة!")
-            markup = visatoken_1KB
 
         elif method_ans == "Visa Token \"لا تدمج\"":
             cur.execute(select_script, (method_ans, ))
             for record in cur.fetchall():
-                price = str(record["price"])
+                price = record["price"]
             type = "Visa_NonM"
-            ask_text = ("كل 1$ يعادل " + str(price) + " SP"+
+            ask_text = ("كل 1$ يعادل *{:,}*".format(price) +  " SP" +
             "\nيرجى إرسال كل بطاقة برسالة منفصلة بالشكل التالي:"+
             "\nXXXX-XXXXXX-XXXX"+
             "\nبعد الانتهاء من إرسال بطاقات يرجى الضغط على زر \"تأكيد\""+
             "\n ملاحظة: بعد الضغط على زر تأكيد لا يمكن التراجع عن هذه الخطوة!")
-            markup = visatoken_1KB
-        code_ask = bot.send_message(message.chat.id, ask_text, reply_markup = markup)
+            
+        code_ask = bot.send_message(message.chat.id, ask_text, reply_markup = check_codeKB, parse_mode="Markdown")
         bot.register_next_step_handler(code_ask, get_codes_2, price, type)
     #---------------------------
     def get_codes_2(message, price, type):
         username = ("@" + message.from_user.username)
         #---------------------
         if ((message.text != "تأكيد") & (message.text != "إلغاء ❌")
-        & (message.text != "القائمة الرئيسية") & (message.text != "/start")
-        & (message.text != "Visa Token \"تدمج\"")):
+        & (message.text != "القائمة الرئيسية") & (message.text != "/start")):
             payment_id = type[0:2] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
             msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
             list.append((payment_id, username, message.text, type , "no", msg_dt, "pending", price))
@@ -1724,19 +1729,26 @@ def rep_MainKB(message):
             "اضغط زر \"إلغاء\" لإلغاء العملية.")
             bot.register_next_step_handler(code_ask_2, get_codes_2, price, type)
         elif message.text == "تأكيد":
-            check_ask = bot.send_message(message.chat.id,
-            ("***هذه الخطوة لا يمكن التراجع عنها***" + 
-            "\n هل تريد بالتأكيد إرسال البطاقات السابقة جميعها؟"), reply_markup = checkKB)
-            bot.register_next_step_handler(check_ask, get_codes_3, price, type)
+            if len(list) > 0:
+                check_ask = bot.send_message(message.chat.id,
+                ("***هذه الخطوة لا يمكن التراجع عنها***" + 
+                "\n هل تريد بالتأكيد إرسال البطاقات السابقة جميعها؟"), reply_markup = checkKB)
+                bot.register_next_step_handler(check_ask, get_codes_3, price, type)
+            elif len(list) == 0:
+                code_ask = bot.send_message(message.chat.id,
+                ("يجب إرسال بطاقة واحدة على الأقل قبل الضغط على زر تأكيد" + 
+                "\n قم بإرسال البطاقات أو اضغط زر \"إلغاء ❌\" لإلغاء العملية"), reply_markup = check_codeKB)
+                bot.register_next_step_handler(code_ask, get_codes_2, price, type)
         elif message.text == "إلغاء ❌":
             list.clear()
             # UnSuccess Message
-            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=payKB)
-            get_method_step1(message)
+            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=mainKB)
         elif message.text == "القائمة الرئيسية":
             list.clear()
-            bot.send_message(message.chat.id,
-            "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        elif message.text == "/start":
+            list.clear()
+            start(message)
     #---------------------------
     def get_codes_3(message, price, type):
         if message.text == "نعم":
@@ -1762,48 +1774,53 @@ def rep_MainKB(message):
                 for record in cur.fetchall():
                     username = record["source"]
                     type = record["type"]
-                    price = str(record["price"])
+                    price = record["price"]
                     msg_dt = record["receive_dt"]
                     Status = record["status"]
                     payment_code = record["code"]
-                for id in admin_ids:
-                    bot.send_message(id,
-                    "تم استقبال دفعة جديدة !"
-                    + "\n Payment_ID: " + payment_id
-                    + "\n Type: " + type
-                    + "\n Price: " + str(price) + " SP"
-                    + "\n First Name: " + first_name
-                    + "\n Username: " + username
-                    + "\n Date: " + str(msg_dt)
-                    + "\n Status: " + Status
-                    + "\n----------------"
-                    + "\n Payment Code: " + payment_code
-                    + "\n Payment ID will be sent Again seperatly")
-                    bot.send_message(id, payment_id)
+                
+                bot.send_message(payments_chat_id,
+                "تم استقبال دفعة جديدة !"
+                + "\n Payment ID: `{}`".format(payment_id)
+                + "\n النوع: *{}*".format(type)
+                + "\n سعر المبيع: *{:,}*".format(price) + " SP"
+                + "\n اسم العميل: *{}*".format(first_name)
+                + "\n اسم المستخدم: *{}*".format(username)
+                + "\n تاريخ الاستلام: *{}*".format(msg_dt)
+                + "\n الحالة: *{}*".format(Status)
+                + "\n----------------"
+                + "\n كود الدفعة: `{}`".format(payment_code) , parse_mode="Markdown")
             #-----------------------
             # Success Message
             bot.send_message(message.chat.id, text =
             """تم استقبال جميع البطاقات بنجاح !\n
             مدة معالجة الطلب 24 ساعة من تاريخ إرسال البطاقة.""", reply_markup = mainKB)
             #-----------------------
+            con.commit()
+            con.close() # End Database Connection
         elif message.text == "لا":
             list.clear()
-            # UnSuccess Message
             bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=mainKB)
-        con.commit()
-        con.close() # End Database Connection
+        elif message.text == "القائمة الرئيسية":
+            list.clear()
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        elif message.text == "/start":
+            list.clear()
+            start(message)
+        else:
+            check_ask = bot.send_message(message.chat.id, "ما قدرت أفهم عليك 😕"
+            + "\n اكبس على زر من الأزرار اللي تحت 👇🏻😁", reply_markup = checkKB)
+            bot.register_next_step_handler(check_ask, get_codes_3, price, type)
+    
     #---------------------------
     # حوالة مالية (هرم)
     def get_photo_1(message):
         ask_text = bot.send_message(message.chat.id,
-        """كل 1 ليرة سورية\n
-        تعادل 1 SP من رصيد البوت\n
-        من فضلك قم بإرسال المبلغ المطلوب إضافته إلى رصيدك\n
-        على بيانات التحويل التالية:
-        اسم المستلم: محمد حسام خليلي\n
-        المحافظة: دمشق\n
-        الهاتف المحمول: 0955110691\n
-        ثم اضغط زر 'إرسال صورة وصل' لتأكيد الدفعة الخاصة بك""", reply_markup=haramKB)
+        "كل 1 ليرة سورية" +
+        "\nتعادل 1 SP من رصيد البوت" +
+        "\nمن فضلك قم بإرسال المبلغ المطلوب إضافته إلى رصيدك" +
+        "\nعلى بيانات التحويل التالية: \n`{}`\n`{}`\n`{}`".format("اسم المستلم: محمد حسام خليلي", "المحافظة: دمشق", "الهاتف المحمول: 0955110691") +
+        "\nثم اضغط زر 'إرسال صورة وصل' لتأكيد الدفعة الخاصة بك", reply_markup=haramKB, parse_mode="Markdown")
         bot.register_next_step_handler(ask_text, get_photo_2,)
    
     def get_photo_2(message,):
@@ -1813,24 +1830,37 @@ def rep_MainKB(message):
             **مدة معالجة الطلب 24 ساعة من تاريخ إرسال صورة الوصل.""", reply_markup=check3KB)
             bot.register_next_step_handler(photo_ask, get_photo_3)
         elif message.text == "إلغاء ❌":
-            get_method_step1(message)
+            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=mainKB)
         elif message.text == "القائمة الرئيسية":
-            bot.send_message(message.chat.id,
-            "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
-   
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        elif message.text == "/start":
+            start(message)
+        else:
+            ask_text = bot.send_message(message.chat.id, "ما قدرت أفهم عليك 😕"
+            + "\n اكبس على زر من الأزرار اللي تحت 👇🏻😁", reply_markup = haramKB)
+            bot.register_next_step_handler(ask_text, get_photo_2,)
+    
     def get_photo_3(message,):
-        if (message.text != "إلغاء ❌") & (message.text != "القائمة الرئيسية") & (message.text != "تأكيد"):
+        if message.photo is not None:
             list.append(message.photo[-1].file_id)
             img = list[0]
             confirm_ask = bot.send_message(message.chat.id,
             text = "اضغط زر \"تأكيد\" لتأكيد العملية.", reply_markup=check2KB)
             bot.register_next_step_handler(confirm_ask, get_photo_4, img,)
+        elif message.photo is None:
+            photo_ask = bot.send_message(message.chat.id,
+            "حدث خطأ من فضلك قم بإرسال صورة وصل التحويل فقط", reply_markup=check3KB)
+            bot.register_next_step_handler(photo_ask, get_photo_3)
         elif message.text == "إلغاء ❌":
-            get_method_step1(message)
+            list.clear()
+            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=mainKB)
         elif message.text == "القائمة الرئيسية":
-            bot.send_message(message.chat.id,
-            "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
-        
+            list.clear()
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        elif message.text == "/start":
+            list.clear()
+            start(message)
+
     def get_photo_4(message, img,):
         con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
@@ -1840,32 +1870,42 @@ def rep_MainKB(message):
             msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
             username = "@" + message.from_user.username
             first_name = message.chat.first_name
-            price = "1"
+            price = 1
             #-----------------------------
             # Insert Order in database
             script_insert = "INSERT into received_payments (id, source, code, type, receive_dt, status, price) VALUES (%s, %s, %s, %s, %s, %s, %s)"
             script_value = (payment_id, username, "Image", "Haram", msg_dt, "pending", price)
             cur.execute(script_insert, script_value)
-            for id in admin_ids:
-                # Admin Message
-                bot.send_photo(id, img,
-                "تم استقبال دفعة جديدة !"
-                + "\n المعرف (Payment_ID): " + payment_id
-                + "\n النوع : " + "Haram"
-                + "\n سعر المبيع: " + price + " SP"
-                + "\n الاسم الاول: " + first_name
-                + "\n اسم المستخدم: " + username
-                + "\n تاريخ الإرسال: " + msg_dt
-                + "\n الحالة: " + "pending")
-                bot.send_message(id, payment_id)
+           
+            # Admin Message
+            bot.send_photo(payments_chat_id, img,
+            "تم استقبال دفعة جديدة !"
+            + "\n Payment ID: `{}`".format(payment_id)
+            + "\n النوع : *{}*".format("Haram")
+            + "\n سعر المبيع: *{:,}*".format(price) + " SP"
+            + "\n الاسم الاول: *{}*".format(first_name)
+            + "\n اسم المستخدم: *{}*".format(username)
+            + "\n تاريخ الإرسال: *{}*".format(msg_dt)
+            + "\n الحالة: *{}*".format("pending"), parse_mode="Markdown")
+           
             #-----------------------------
             # Client Message
             bot.send_message(message.chat.id, text = "تم استقبال طلبك بنجاح !", reply_markup=mainKB)
         elif message.text == "إلغاء ❌":
-            get_method_step1(message)
+            list.clear()
+            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=mainKB)
         elif message.text == "القائمة الرئيسية":
-            bot.send_message(message.chat.id,
-            "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
+            list.clear()
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        elif message.text == "/start":
+            list.clear()
+            start(message)
+        else:
+            confirm_ask = bot.send_message(message.chat.id, "ما قدرت أفهم عليك 😕"
+            + "\n اكبس على زر من الأزرار اللي تحت 👇🏻😁", reply_markup = check2KB)
+            bot.register_next_step_handler(confirm_ask, get_photo_4, img,)
+    
+        
         con.commit()
         cur.close()
         con.close()
@@ -1887,50 +1927,56 @@ def rep_MainKB(message):
         if product_ans == "تحضير حساب حقيقي":
             cur.execute(select_script, (product_ans, ))
             for record in cur.fetchall():
-                price = str(record["price"])
+                price = record["price"]
             product = "Account"
             ask_text = """اسم المنتج: تحضير حساب حقيقي\n
                 **وصف مختصر**\n
-                سعر المنتج: """ + str(price) + " SP"
+                سعر المنتج: {}""".format(price) + " SP"
             markup = req_productKB
             product_ask = bot.send_message(message.chat.id, ask_text, reply_markup = markup)
-            bot.register_next_step_handler(product_ask, request_product_2, price, product, product_ans)
+            bot.register_next_step_handler(product_ask, request_product_2, price, product, product_ans, markup)
         #---------------------------
         elif product_ans == "تحضير حساب حقيقي مع SSN":
             cur.execute(select_script, (product_ans, ))
             for record in cur.fetchall():
-                price = str(record["price"])
+                price = record["price"]
             product = "Account+SSN"
             ask_text = """اسم المنتج: تحضير حساب حقيقي مع SSN\n
                 **وصف مختصر**\n
-                سعر المنتج: """ + str(price) + " SP"
+                سعر المنتج: {}""".format(price) + " SP"
             markup = req_productKB
             product_ask = bot.send_message(message.chat.id, ask_text, reply_markup = markup)
-            bot.register_next_step_handler(product_ask, request_product_2, price, product, product_ans)
+            bot.register_next_step_handler(product_ask, request_product_2, price, product, product_ans, markup)
         #---------------------------
         elif product_ans == "SSN":
             cur.execute(select_script, (product_ans, ))
             for record in cur.fetchall():
-                price = str(record["price"])
+                price = record["price"]
             product = "SSN"
             ask_text = """اسم المنتج: SSN\n
                 **وصف مختصر**\n
-                سعر المنتج: """ + str(price) + " SP"
+                سعر المنتج: {}""".format(price) + " SP"
             markup = req_productKB
             product_ask = bot.send_message(message.chat.id, ask_text, reply_markup = markup)
-            bot.register_next_step_handler(product_ask, request_product_2, price, product, product_ans)
+            bot.register_next_step_handler(product_ask, request_product_2, price, product, product_ans, markup)
         elif message.text == "معرفة رصيدي":
             my_balance(message)
         elif message.text == "لائحة الأسعار":
             price_list1(message)
         elif message.text == "القائمة الرئيسية":
-            bot.send_message(message.chat.id,
-            "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        elif message.text == "/start":
+            start(message)
+        else:
+            product_ask = bot.send_message(message.chat.id, "ما قدرت أفهم عليك 😕"
+            + "\n اكبس على زر من الأزرار اللي تحت 👇🏻😁", reply_markup = requestKB)
+            bot.register_next_step_handler(product_ask, request_product_1)
+    
         con.commit()
         cur.close()
         con.close()
-#---------------------------
-    def request_product_2(message, price, product, product_ans):
+    #---------------------------
+    def request_product_2(message, price, product, product_ans, markup):
         username = ("@" + message.from_user.username)
         #---------------------
         if (message.text == "طلب منتج واحد"):
@@ -1939,53 +1985,59 @@ def rep_MainKB(message):
             order_id = product[0] + product[-1] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
             list.append((order_id, username, product , qnt, price, "paid", msg_dt, "no"))
             order_check = bot.send_message(message.chat.id,
-            text = "معلومات الطلب خاص بك:\n"
-            "اسم المنتج: " + product_ans + "\n" +
-            "الكمية: " + str(qnt) + "\n" +
-            "السعر الإجمالي: " + str(qnt*price) + "\n" +
-            """اضغط زر "تأكيد" لتأكيد الطلب\n
-            اضغط زر "إلغاء ❌" لإلغاء الطلب.""", reply_markup = check2KB)
+            text = "معلومات الطلب خاص بك:"
+            "\nاسم المنتج: *{}*".format(product_ans) +
+            "\nالكمية: *{}*".format(qnt) + 
+            "\nالسعر الإجمالي: *{:,}*".format(qnt*price) + " SP" +
+            "\nاضغط زر \"تأكيد\" لتأكيد الطلب"
+            "\nاضغط زر \"إلغاء ❌\" لإلغاء الطلب.", reply_markup = check2KB, parse_mode="Markdown")
             bot.register_next_step_handler(order_check, request_product_4, price, qnt, product, order_id)
         elif message.text == "طلب كمية":
             qnt_ask = bot.send_message(message.chat.id,
             "يرجى كتابة الكمية المطلوبة كرقم", reply_markup = check3KB)
             bot.register_next_step_handler(qnt_ask, request_product_3, price, product, product_ans)
         elif message.text == "إلغاء ❌":
-            choose_product_1(message)
+            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=mainKB)
         elif message.text == "القائمة الرئيسية":
-            bot.send_message(message.chat.id,
-            "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        elif message.text == "/start":
+            start(message)
+        else:
+            ask_text = bot.send_message(message.chat.id, "ما قدرت أفهم عليك 😕"
+            + "\n اكبس على زر من الأزرار اللي تحت 👇🏻😁", reply_markup = markup)
+            bot.register_next_step_handler(ask_text, request_product_2, price, product, product_ans, markup)
     #---------------------------
     def request_product_3(message, price, product, product_ans):
         msg_dt = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
         username = ("@" + message.from_user.username)
-        qnt = message.text
+        qnt = int(message.text)
         order_id = product[0] + product[-1] + (username[1:3]) + str(int(time.time())) + (username[-3:-1])
         list.append((order_id, username, product , qnt, price, "paid", msg_dt, "no"))
         
         order_check = bot.send_message(message.chat.id,
-        text = "معلومات الطلب الخاص بك:\n"
-        "اسم المنتج: " + product_ans + "\n" +
-        "الكمية: " + str(qnt) + "\n" +
-        "السعر الإجمالي: " + str(int(qnt)*int(price)) + "\n" +
-        """اضغط زر "تأكيد" لتأكيد الطلب\n
-        اضغط زر "إلغاء ❌" لإلغاء الطلب.""", reply_markup = check2KB)
+        text = "معلومات الطلب خاص بك:"
+        "\nاسم المنتج: *{}*".format(product_ans) +
+        "\nالكمية: *{}*".format(qnt) + 
+        "\nالسعر الإجمالي: *{:,}*".format(qnt*price) + " SP" +
+        "\nاضغط زر \"تأكيد\" لتأكيد الطلب"
+        "\nاضغط زر \"إلغاء ❌\" لإلغاء الطلب.", reply_markup = check2KB, parse_mode="Markdown")
         bot.register_next_step_handler(order_check, request_product_4, price, qnt, product, order_id)
     #---------------------------
     def request_product_4(message, price, qnt, product, order_id):
         con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         # Dir Names:
+        
         if product == "Account":
-            product_dir = "C:/Users/mjkha/Desktop/Personal/Programming Projects/bablyon/telegram_bot/products/account"
+            product_dir = product1_dir
             sold_dir = product_dir + "_sold"
             available_products = len(os.listdir(product_dir))
         elif product == "Account+SSN":
-            product_dir = "products/account+ssn"
+            product_dir = product2_dir
             sold_dir = product_dir + "_sold"
             available_products = len(os.listdir(product_dir))
         elif product == "SSN":
-            product_dir = "C:/Users/mjkha/Desktop/Personal/Programming Projects/bablyon/telegram_bot/products/ssn"
+            product_dir = product3_dir
             sold_dir = product_dir + "_sold"
             available_products = len(os.listdir(product_dir))
         #-------------------------------
@@ -1996,8 +2048,7 @@ def rep_MainKB(message):
             select_value = (username,)
             cur.execute(select_script, select_value)
             for record in cur.fetchall():
-                old_balance = str(record['balance'])
-            
+                old_balance = record['balance']
             #------------------------------
             # Checking if the balance is enough
             if (int(qnt)*int(price)) <= int(old_balance):
@@ -2016,7 +2067,10 @@ def rep_MainKB(message):
                 # Getting The New Balance
                 cur.execute(select_script, select_value)
                 for record in cur.fetchall():
-                    new_balance = str(record['balance'])
+                    new_balance = record['balance']
+                bot.send_message(message.chat.id,
+                "رصيدك السابق: *{:,}*".format(old_balance) + " SP"
+                + "\nرصيدك الحالي: *{:,}*".format(new_balance) + " SP", reply_markup = mainKB, parse_mode="Markdown")
                 # Checing If the Products are Enough
                 if available_products >= int(qnt): #  Enough Products => Sending Imediatly
                     #-------------------------------
@@ -2051,30 +2105,23 @@ def rep_MainKB(message):
                     for record in cur.fetchall():
                         username = record["client_username"]
                         product = record["product_name"]
-                        price = str(record["price"])
-                        qnt = str(record["quantity"])
+                        price = record["price"]
+                        qnt = record["quantity"]
                         total_price = int(price)*int(qnt)
                         order_dt = record["order_dt"]
                         status = record["status"]
                     
-                    for id in admin_ids:
-                        bot.send_message(id, "طلب شراء منتج جديد !"
-                        + "\n Order_ID: " + order_id
-                        + "\n Product: " + product
-                        + "\n Price: " + str(price) + " SP"
-                        + "\n Total Price: " + str(total_price) + " SP"
-                        + "\n First Name: " + first_name
-                        + "\n Username: " + username
-                        + "\n Order Date: " + str(order_dt)
-                        + "\n Status: " + status
-                        + "\n Delivered: " + "Yes"
-                        + "\n----------------"
-                        + "\n Order ID will be sent Again seperatly")
-                    bot.send_message(id, order_id)
-                    #--------------------------
-                    bot.send_message(message.chat.id,
-                    "رصيدك السابق: " + old_balance +" SP\nرصيدك الحالي: " + new_balance + " SP", reply_markup = mainKB)
-                
+                    bot.send_message(orders_chat_id, "طلب شراء منتج جديد !"
+                        + "\n Order ID: `{}`".format(order_id)
+                        + "\n اسم المنتج: *{}*".format(product)
+                        + "\n سعر المبيع: *{:,}*".format(price) + " SP"
+                        + "\n السعر الإجمالي: *{:,}*".format(total_price) + " SP"
+                        + "\n اسم العميل: *{}*".format(first_name)
+                        + "\n اسم المستخدم: *{}*".format(username)
+                        + "\n تاريخ الطلب: *{}*".format(order_dt)
+                        + "\n حالة الدفع: *{}*".format(status)
+                        + "\n حالة التسليم: *{}*".format("Yes"), parse_mode="Markdown")
+                #--------------------------------------
                 elif available_products < int(qnt): # No Enough Products => Recording Order
                     print("no enough products")
                     
@@ -2086,48 +2133,49 @@ def rep_MainKB(message):
                     for record in cur.fetchall():
                         username = record["client_username"]
                         product = record["product_name"]
-                        price = str(record["price"])
-                        qnt = str(record["quantity"])
+                        price = record["price"]
+                        qnt = record["quantity"]
                         total_price = int(price)*int(qnt)
                         order_dt = record["order_dt"]
                         status = record["status"]
-                    print(order_id)
-                    for id in admin_ids:
-                        bot.send_message(id, "طلب شراء منتج جديد !"
-                        + "\n Order_ID: " + order_id
-                        + "\n Product: " + product
-                        + "\n Price: " + str(price) + " SP"
-                        + "\n Total Price: " + str(total_price) + " SP"
-                        + "\n First Name: " + first_name
-                        + "\n Username: " + username
-                        + "\n Order Date: " + str(order_dt)
-                        + "\n Status: " + status
-                        + "\n Delivered: " + "No"
-                        + "\n----------------"
-                        + "\n Order ID will be sent Again seperatly")
-                    bot.send_message(id, order_id)
+                    bot.send_message(orders_chat_id, "طلب شراء منتج جديد !"
+                        + "\n Order ID: `{}`".format(order_id)
+                        + "\n اسم المنتج: *{}*".format(product)
+                        + "\n سعر المبيع: *{:,}*".format(price) + " SP"
+                        + "\n السعر الإجمالي: *{:,}*".format(total_price) + " SP"
+                        + "\n اسم العميل: *{}*".format(first_name)
+                        + "\n اسم المستخدم: *{}*".format(username)
+                        + "\n تاريخ الطلب: *{}*".format(order_dt)
+                        + "\n حالة الدفع: *{}*".format(status)
+                        + "\n حالة التسليم: *{}*".format("No"), parse_mode="Markdown")
+                        #--------------------------
+                    
                     #-----------------------
                     # Success Message - Client
                     bot.send_message(message.chat.id,
                     "تم استقبال طلبك بنجاح !" + 
                     "\nمدة معالجة الطلب 24 ساعة من تاريخ إرسال الطلب.", reply_markup = mainKB)
-                    bot.send_message(message.chat.id,
-                    "رصيدك السابق: " + old_balance +" SP\nرصيدك الحالي: " + new_balance + " SP", reply_markup = mainKB)
-
-
+                    
             elif (int(qnt)*int(price)) > int(old_balance):
                 cur.execute(select_script, select_value)
                 for record in cur.fetchall():
-                    balance = str(record['balance'])
+                    balance = record['balance']
                 bot.send_message(message.chat.id,
-                "عذراً، ليس لديك رصيد كاف لإتمام العملية\n رصيدك الحالي: " + str(balance) + " SP", reply_markup = mainKB)          
+                "عذراً، ليس لديك رصيد كاف لإتمام العملية"
+                + "\n رصيدك الحالي: *{:,}*".format(balance) + " SP", reply_markup = mainKB, parse_mode="Markdown")          
         elif message.text == "إلغاء ❌":
             list.clear()
-            choose_product_1(message)
+            bot.send_message(message.chat.id, text = "تم إلغاء العملية.", reply_markup=mainKB)
         elif message.text == "القائمة الرئيسية":
             list.clear()
-            bot.send_message(message.chat.id,
-            "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        elif message.text == "/start":
+            start(message)
+        else:
+            order_check = bot.send_message(message.chat.id, "ما قدرت أفهم عليك 😕"
+            + "\n اكبس على زر من الأزرار اللي تحت 👇🏻😁", reply_markup = check2KB)
+            bot.register_next_step_handler(order_check, request_product_4, price, qnt, product, order_id)
+    
         con.commit()
         cur.close()
         con.close()
@@ -2138,27 +2186,47 @@ def rep_MainKB(message):
     def price_list1(message):
         list_ask = bot.send_message(message.chat.id, "من فضلك اختر القائمة المطلوبة" , reply_markup=price_listKB)
         bot.register_next_step_handler(list_ask, price_list2)
-    
+    #---------------------------
     def price_list2(message):
         text = ""
         list_ans = message.text 
         con = psycopg2.connect(DATABASE_URL)
         cur = con.cursor(cursor_factory = psycopg2.extras.DictCursor)
         if list_ans == "أسعار رصيد البوت":
-            select_script =  """SELECT * FROM price_list
-                                where
-                                product_name = 'Yobit Code' OR
-                                product_name = 'Visa Token "لا تدمج"' OR
-                                product_name = 'Visa Token "تدمج"' OR
-                                product_name = 'Syriatel Cash' OR
-                                product_name = 'Payeer' OR
-                                product_name = 'MTN Cash'"""
-            cur.execute(select_script)
+            select_script =  "SELECT * FROM price_list where product_name = %s"
+            
+            cur.execute(select_script, ('Visa Token "تدمج"', ))
             for record in cur.fetchall():
-                product_name = record["product_name"]
-                price = str((record['price']))
-                text = text + "\n كل 1$ من: " + product_name + "\n يعادل: " + price + " SP\n--------"
-            bot.send_message(message.chat.id, text, reply_markup=returnToMainKB)
+                price = record['price']
+            visa_m = "كل 1$ من: *{}*".format('Visa Token "تدمج"') + "\n يعادل: *{:,}*".format(price) + " SP"
+            
+            cur.execute(select_script, ('Visa Token "لا تدمج"', ))
+            for record in cur.fetchall():
+                price = record['price']
+            visa_non = "كل 1$ من: *{}*".format('Visa Token "لا تدمج"') + "\n يعادل: *{:,}*".format(price) + " SP"
+
+            cur.execute(select_script, ('Yobit Code', ))
+            for record in cur.fetchall():
+                price = record['price']
+            yobit = "كل 1$ من: *{}*".format('Yobit Code') + "\n يعادل: *{:,}*".format(price) + " SP"
+
+            cur.execute(select_script, ('Payeer', ))
+            for record in cur.fetchall():
+                price = record['price']
+            payeer = "كل 1$ من: *{}*".format('Payeer') + "\n يعادل: *{:,}*".format(price) + " SP"
+
+            cur.execute(select_script, ('حوالة مالية (هرم)', ))
+            for record in cur.fetchall():
+                price = record['price']
+            haram = "كل 1 ليرة سورية من: *{}*".format('حوالة مالية (هرم)') + "\n تعادل: *{:,}*".format(price) + " SP"
+            
+
+            bot.send_message(message.chat.id,
+            visa_m + "\n--------\n" +
+            visa_non + "\n--------\n" +
+            yobit + "\n--------\n" +
+            payeer + "\n--------\n" +
+            haram, reply_markup=returnToMainKB, parse_mode="Markdown")
         elif list_ans == "أسعار منتجاتنا":
             select_script =  """SELECT * FROM price_list
                                 where
@@ -2168,15 +2236,19 @@ def rep_MainKB(message):
             cur.execute(select_script)
             for record in cur.fetchall():
                 product_name = record["product_name"]
-                price = str((record['price']))
-                text = text + "\n اسم المنتج: " + product_name + "\n السعر: " + price + " SP\n--------"
-            bot.send_message(message.chat.id, text, reply_markup=returnToMainKB)
-        elif list_ans == "القائمة الرئيسية":
-            bot.send_message(message.chat.id, "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
-            
-        #bot.send_message(message.chat.id, list_str, reply_markup=returnToMainKB)
+                price = record['price']
+                text = text + "\n اسم المنتج: *{}*".format(product_name) + "\n السعر: *{:,}*".format(price) + " SP\n--------"
+            bot.send_message(message.chat.id, text, reply_markup=returnToMainKB, parse_mode="Markdown")
+        elif message.text == "القائمة الرئيسية":
+            bot.send_message(message.chat.id, "👍🏻", reply_markup = mainKB)
+        elif message.text == "/start":
+            start(message)
+        else:
+            list_ask = bot.send_message(message.chat.id, "ما قدرت أفهم عليك 😕"
+            + "\n اكبس على زر من الأزرار اللي تحت 👇🏻😁", reply_markup = price_listKB)
+            bot.register_next_step_handler(list_ask, price_list2)
         
-        #bot.send_message(message.chat.id, price_list, reply_markup=returnToMainKB)
+        
         con.commit()
         cur.close()
         con.close() # End Database Connection
@@ -2192,9 +2264,9 @@ def rep_MainKB(message):
         select_value = (username,)
         cur.execute(select_script, select_value)
         for record in cur.fetchall():
-            balance = str(record['balance'])
+            balance = record['balance']
         bot.send_message(message.chat.id,
-        "رصيدك الحالي: " + balance + " SP")
+        "رصيدك الحالي: *{:,}*".format(balance) + " SP", parse_mode="Markdown")
         con.commit()
         cur.close()
         con.close()
@@ -2220,6 +2292,10 @@ def rep_MainKB(message):
         bot.send_message(message.chat.id, "اعطينا رأيك بالبوت واقتراحاتك", reply_markup = returnToMainKB)
     elif message.text == "القائمة الرئيسية":
         bot.send_message(message.chat.id, "أهلاً بك في البوت الخاص بنا \n كيف يمكنني مساعدتك؟", reply_markup = mainKB)
+    else:
+            order_check = bot.send_message(message.chat.id, "ما قدرت أفهم عليك 😕"
+            + "\n اكبس على زر من الأزرار اللي تحت 👇🏻😁", reply_markup = mainKB)
+            bot.register_next_step_handler(order_check, rep_MainKB)
     
 #----------------------------------------------    
 
